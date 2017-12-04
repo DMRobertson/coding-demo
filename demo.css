@@ -11,6 +11,8 @@ body {
 	justify-items: stretch;
 }
 
+canvas { display: none; }
+
 main {
 	flex-grow: 1;
 	flex-shrink: 1;
@@ -57,4 +59,4 @@ main img {
 	background: #fff0f0;
 }
 
-#get_image, canvas { display: none; }
+#get_image { display: none; }

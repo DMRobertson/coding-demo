@@ -48,7 +48,7 @@ let dragHandlers = {
 		e.preventDefault();
 		if (DTHasFile(e.dataTransfer)){
 			this.classList.remove("mid_drag");
-			loadFile(DTGetFile(e.dataTransfer), this);
+			loadFile(DTGetFile(e.dataTransfer));
 		}
 	},
 	/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
@@ -71,7 +71,7 @@ function changeHandler(e){
 	}
 }
 
-function loadFile(file, dropZone){
+function loadFile(file){
 	let fr = new FileReader();
 	fr.onload = function () {
 		document.getElementById('sent').src = fr.result;
@@ -79,8 +79,58 @@ function loadFile(file, dropZone){
 	fr.readAsDataURL(file);
 }
 
-
-
+function imageChanged(){
+	let canvas = document.querySelector("canvas");
+	let ctx = canvas.getContext("2d", {alpha: false});
+	// Setup canvas to be the static image
+	let overscale = Math.max(1, this.naturalWidth/800, this.naturalHeight/800);
+	canvas.width = Math.ceil(this.naturalWidth/overscale);
+	canvas.height = Math.ceil(this.naturalHeight/overscale);
+	console.log(Math.ceil(this.naturalWidth/overscale), Math.ceil(this.naturalHeight/overscale));
+	ctx.drawImage(this, 0, 0);
+	
+	let settings = {
+		encode: x => x,
+		encoded_length: 24, //for now let's assume this is less than 32
+		error_probability: 0.15,
+		apply_noise: function(x){
+			let mask = 1;
+			for (let i = 0; i < this.encoded_length; i++){
+				if (Math.random() < this.error_probability){
+					x ^= mask;
+				}
+				mask <<= 1;
+			}
+			return x;
+		},
+		transmit: function(x){
+			return this.apply_noise(this.encode(x))
+		},
+	}
+	
+	//Simulate noise according to the channel settings
+	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	let pixels = imageData.data;
+	const LAST_EIGHT_BITS = 0b11111111;
+	for (let index = 0; index < pixels.length; index += 4){
+		// get message unit
+		let message_unit = 
+			pixels[index]
+			+ (pixels[index + 1] << 8)
+			+ (pixels[index + 2] << 16);
+		let received = settings.transmit(message_unit);
+		let r = received & LAST_EIGHT_BITS;
+		received >>>= 8;
+		let g = received & LAST_EIGHT_BITS;
+		received >>>= 8;
+		let b = received & LAST_EIGHT_BITS;
+		pixels[index] = r;
+		pixels[index + 1] = g;
+		pixels[index + 2] = b;
+	}
+	ctx.putImageData(imageData, 0, 0);
+	document.getElementById('received').src = canvas.toDataURL();
+}
 
 function main(){
 	let drop_zone = document.getElementById("drop_zone");
@@ -90,6 +140,7 @@ function main(){
 	drop_zone.addEventListener("dragover", dragHandlers.over);
 	drop_zone.addEventListener("dragend", dragHandlers.end);
 	document.getElementById("get_image").addEventListener("change", changeHandler);
+	document.getElementById("sent").addEventListener("load", imageChanged);
 }
 
 document.addEventListener("DOMContentLoaded", main);
