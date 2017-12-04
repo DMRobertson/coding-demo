@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+	<title>Coding theory demo</title>
+	<script src="demo.js"></script>
+	<link rel="stylesheet" type="text/css" href="demo.css" />
+</head>
+<body>
+	<header>
+		<h1>Coding theory demo</h1>
+	</header>
+	<main>
+		<label id="sent" for="get_image">
+			<img id="original" />
+			<input id="get_image" type="file" accept="image/*"></input>
+			<p><strong>Choose a file</strong> or drag it here.</p>
+		</label>
+		<section id="received">
+			<canvas>
+			</canvas>
+			<p>Image after transmission</p>
+		</section>
+		<section id="computed">
+			<canvas>
+			</canvas>
+			<p>Image after correction</p>
+		</section>
+	</main>
+	<footer>
+		<h2>Settings</h2>
+	</footer>
+</body>
+</html>
