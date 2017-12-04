@@ -9,20 +9,19 @@
 	<header>
 		<h1>Coding theory demo</h1>
 	</header>
+	<canvas></canvas>
 	<main>
-		<label id="sent" for="get_image">
-			<img id="original" />
+		<label id="drop_zone" for="get_image">
+			<img id="sent" />
 			<input id="get_image" type="file" accept="image/*"></input>
 			<p><strong>Choose a file</strong> or drag it here.</p>
 		</label>
-		<section id="received">
-			<canvas>
-			</canvas>
+		<section>
+			<img id="received" />
 			<p>Image after transmission</p>
 		</section>
-		<section id="computed">
-			<canvas>
-			</canvas>
+		<section>
+			<img id="computed" />
 			<p>Image after correction</p>
 		</section>
 	</main>

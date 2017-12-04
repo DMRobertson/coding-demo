@@ -74,7 +74,7 @@ function changeHandler(e){
 function loadFile(file, dropZone){
 	let fr = new FileReader();
 	fr.onload = function () {
-		document.getElementById('original').src = fr.result;
+		document.getElementById('sent').src = fr.result;
 	}
 	fr.readAsDataURL(file);
 }
@@ -83,12 +83,12 @@ function loadFile(file, dropZone){
 
 
 function main(){
-	let sent = document.getElementById("sent");
-	sent.addEventListener("drop", dragHandlers.drop);
-	sent.addEventListener("dragenter", dragHandlers.enter);
-	sent.addEventListener("dragleave", dragHandlers.leave);
-	sent.addEventListener("dragover", dragHandlers.over);
-	sent.addEventListener("dragend", dragHandlers.end);
+	let drop_zone = document.getElementById("drop_zone");
+	drop_zone.addEventListener("drop", dragHandlers.drop);
+	drop_zone.addEventListener("dragenter", dragHandlers.enter);
+	drop_zone.addEventListener("dragleave", dragHandlers.leave);
+	drop_zone.addEventListener("dragover", dragHandlers.over);
+	drop_zone.addEventListener("dragend", dragHandlers.end);
 	document.getElementById("get_image").addEventListener("change", changeHandler);
 }
 
