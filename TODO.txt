@@ -1,0 +1,2 @@
+TODO (apart from make the thing work)
+	* Acknowledge David McKay's book (Garfield pictures) for the idea

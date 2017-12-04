@@ -2,6 +2,7 @@ body {
 	font-family: sans-serif;
 	padding: 8px;
 	margin: 0;
+	user-select: none;
 	
 	display: flex;
 	flex-direction: column;
