@@ -28,23 +28,19 @@ function DTGetFile(dt){
 
 let dragHandlers = {
 	"enter": function (e){
-		console.log("enter");
 		e.dataTransfer.dropEffect = "link";
 		this.classList.toggle("mid_drag", DTHasFile(e.dataTransfer));
 	},
 	
 	"over": function (e){
-		console.log("over");
 		e.preventDefault();
 	},
 	
 	"leave": function (e){
-		console.log("leave");
 		this.classList.remove("mid_drag");
 	},
 	
 	"drop": function (e){
-		console.log("drop");
 		e.preventDefault();
 		if (DTHasFile(e.dataTransfer)){
 			this.classList.remove("mid_drag");
@@ -53,7 +49,6 @@ let dragHandlers = {
 	},
 	/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
 	"end": function (e) {
-		console.log("end");
 		let dt = ev.dataTransfer;
 		if (dt.items) {
 			for (let i = 0; i < dt.items.length; i++) {
@@ -86,7 +81,6 @@ function imageChanged(){
 	let overscale = Math.max(1, this.naturalWidth/800, this.naturalHeight/800);
 	canvas.width = Math.ceil(this.naturalWidth/overscale);
 	canvas.height = Math.ceil(this.naturalHeight/overscale);
-	console.log(Math.ceil(this.naturalWidth/overscale), Math.ceil(this.naturalHeight/overscale));
 	ctx.drawImage(this, 0, 0);
 	
 	let settings = {
