@@ -60,3 +60,9 @@ main img {
 }
 
 #get_image { display: none; }
+
+footer output {
+	display: inline-block;
+	width: 2.5em;
+	text-align: right;
+}

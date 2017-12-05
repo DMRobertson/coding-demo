@@ -74,16 +74,8 @@ function loadFile(file){
 	fr.readAsDataURL(file);
 }
 
-function imageChanged(){
-	let canvas = document.querySelector("canvas");
-	let ctx = canvas.getContext("2d", {alpha: false});
-	// Setup canvas to be the static image
-	let overscale = Math.max(1, this.naturalWidth/800, this.naturalHeight/800);
-	canvas.width = Math.ceil(this.naturalWidth/overscale);
-	canvas.height = Math.ceil(this.naturalHeight/overscale);
-	ctx.drawImage(this, 0, 0);
-	
-	let settings = {
+function getSettings(){
+	const defaultSettings = {
 		encode: x => x,
 		encoded_length: 24, //for now let's assume this is less than 32
 		error_probability: 0.15,
@@ -102,10 +94,35 @@ function imageChanged(){
 		},
 	}
 	
+	let settings = Object.create(defaultSettings);
+	settings.error_probability = parseFloat( document.getElementById("error_probability").value );
+	return settings;
+}
+
+function errorProbabilityMoved(){
+	let percentage = (this.value * 100).toFixed(1);
+	document.querySelector("output[for='error_probability']").innerText = percentage;
+}
+
+function errorProbabilityChanged(){
+	imageChanged.call(document.getElementById('sent'));
+}
+
+function imageChanged(){
+	let canvas = document.querySelector("canvas");
+	let ctx = canvas.getContext("2d", {alpha: false});
+	// Setup canvas to be the static image
+	let overscale = Math.max(1, this.naturalWidth/600, this.naturalHeight/600);
+	canvas.width = Math.ceil(this.naturalWidth/overscale);
+	canvas.height = Math.ceil(this.naturalHeight/overscale);
+	ctx.drawImage(this, 0, 0);
+	
 	//Simulate noise according to the channel settings
+	let settings = getSettings();
 	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	let pixels = imageData.data;
 	const LAST_EIGHT_BITS = 0b11111111;
+	// TODO: parallelise with web worker
 	for (let index = 0; index < pixels.length; index += 4){
 		// get message unit
 		let message_unit = 
@@ -124,6 +141,7 @@ function imageChanged(){
 	}
 	ctx.putImageData(imageData, 0, 0);
 	document.getElementById('received').src = canvas.toDataURL();
+	//TODO: am I leaking memory somewhere?
 }
 
 function main(){
@@ -135,6 +153,9 @@ function main(){
 	drop_zone.addEventListener("dragend", dragHandlers.end);
 	document.getElementById("get_image").addEventListener("change", changeHandler);
 	document.getElementById("sent").addEventListener("load", imageChanged);
+	let probability_slider = document.getElementById("error_probability");
+	probability_slider.addEventListener("change", errorProbabilityChanged);
+	probability_slider.addEventListener("input", errorProbabilityMoved);
 }
 
 document.addEventListener("DOMContentLoaded", main);
