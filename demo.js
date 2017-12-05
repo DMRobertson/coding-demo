@@ -115,7 +115,7 @@ function imageChanged(){
 	let overscale = Math.max(1, this.naturalWidth/600, this.naturalHeight/600);
 	canvas.width = Math.ceil(this.naturalWidth/overscale);
 	canvas.height = Math.ceil(this.naturalHeight/overscale);
-	ctx.drawImage(this, 0, 0);
+	ctx.drawImage(this, 0, 0, canvas.width, canvas.height);
 	
 	//Simulate noise according to the channel settings
 	let settings = getSettings();
