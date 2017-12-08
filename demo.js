@@ -29,7 +29,7 @@ function DTGetFile(dt){
 let dragHandlers = {
 	"enter": function (e){
 		e.dataTransfer.dropEffect = "link";
-		this.classList.toggle("mid_drag", DTHasFile(e.dataTransfer));
+		this.classList.add("mid_drag");
 	},
 	
 	"over": function (e){
@@ -37,13 +37,15 @@ let dragHandlers = {
 	},
 	
 	"leave": function (e){
-		this.classList.remove("mid_drag");
+		if (!this.contains(e.relatedTarget)){
+			this.classList.remove("mid_drag");
+		}
 	},
 	
 	"drop": function (e){
 		e.preventDefault();
+		this.classList.remove("mid_drag");
 		if (DTHasFile(e.dataTransfer)){
-			this.classList.remove("mid_drag");
 			loadFile(DTGetFile(e.dataTransfer));
 		}
 	},
@@ -102,7 +104,7 @@ function getSettings(){
 function errorProbabilityMoved(){
 	let percentage = (this.value * 100).toFixed(1);
 	document.querySelector("output[for='error_probability']").innerText = percentage + "%";
-	document.getElementById("Bob").classList.add("recomputing");
+	document.getElementById("Bob").classList.add("out_of_date");
 }
 
 function errorProbabilityChanged(){
@@ -147,6 +149,7 @@ function imageChanged(){
 	ctx.putImageData(imageData, 0, 0);
 	document.getElementById('received').src = canvas.toDataURL();
 	document.getElementById('Bob').classList.remove("recomputing");
+	document.getElementById("Bob").classList.remove("out_of_date");
 	//TODO: am I leaking memory somewhere?
 }
 
@@ -159,7 +162,7 @@ function main(){
 		} ]
 	});
 	
-	let drop_zone = document.getElementById("Alice");
+	let drop_zone = document.body;
 	drop_zone.addEventListener("drop", dragHandlers.drop);
 	drop_zone.addEventListener("dragenter", dragHandlers.enter);
 	drop_zone.addEventListener("dragleave", dragHandlers.leave);

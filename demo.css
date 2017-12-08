@@ -3,6 +3,14 @@ body {
 	padding: 8px;
 	margin: 0;
 	user-select: none;
+	outline: 2px dashed black;
+	outline-offset: 2px;
+	
+	transition:
+		outline-offset 0.3s,
+		outline-color 0.3s,
+		background-color 0.5s
+	;
 	
 	display: flex;
 	flex-direction: column;
@@ -24,17 +32,21 @@ main, footer {
 	justify-content: space-evenly;
 }
 
-main > * {
+main > *, footer > *{
 	width: 32%;
+	box-sizing: border-box;
+}
+
+main > * {	
 	border: 1px solid #ccc;
 	padding: 4px;
 	background: #f6f6f6;
-	box-sizing: border-box;
 	
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
 	align-items: center;
+	transition: color, background-color, border-color, ease-in-out 0.1s;
 }
 
 main img {
@@ -45,35 +57,31 @@ main img {
 	max-width: 100%;
 }
 
-#Alice, #Bob {
-	transition:
-		outline-offset 0.3s,
-		color 0.3s,
-		background-color 0.5s
-	;
-	transition-timing-function: ease-in-out;
-}
-
 #Alice {
-	outline: 2px dashed currentColor;
-	outline-offset: -2px;
 	cursor: pointer;
+	pointer-events: auto;
 }
 
-#Alice * {
-	pointer-events: none;
+.mid_drag {
+	outline-color: red;
+	outline-offset: -12px;
+	background: #fff4f4;
 }
 
-#Alice:hover, #Alice.mid_drag {
+#Alice:hover {
 	color: red;
-	outline-offset: -6px;
+	border-color: red;
 	background: #fff0f0;
 }
 
 #get_image { display: none; }
 
-.recomputing {
+.out_of_date {
 	background: #d8d8d8;
+}
+
+.recomputing {
+	background: #eee;
 }
 
 footer {
