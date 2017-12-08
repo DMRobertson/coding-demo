@@ -95,13 +95,14 @@ function getSettings(){
 	}
 	
 	let settings = Object.create(defaultSettings);
-	settings.error_probability = parseFloat( document.getElementById("error_probability").value );
+	settings.error_probability = document.getElementById("error_probability").valueAsNumber;
 	return settings;
 }
 
 function errorProbabilityMoved(){
 	let percentage = (this.value * 100).toFixed(1);
-	document.querySelector("output[for='error_probability']").innerText = percentage;
+	document.querySelector("output[for='error_probability']").innerText = percentage + "%";
+	document.getElementById("Bob").classList.add("recomputing");
 }
 
 function errorProbabilityChanged(){
@@ -109,6 +110,10 @@ function errorProbabilityChanged(){
 }
 
 function imageChanged(){
+	if (this.naturalWidth === 0 || this.naturalHeight === 0){
+		return;
+	}
+	document.getElementById("Bob").classList.add("recomputing");
 	let canvas = document.querySelector("canvas");
 	let ctx = canvas.getContext("2d", {alpha: false});
 	// Setup canvas to be the static image
@@ -141,18 +146,29 @@ function imageChanged(){
 	}
 	ctx.putImageData(imageData, 0, 0);
 	document.getElementById('received').src = canvas.toDataURL();
+	document.getElementById('Bob').classList.remove("recomputing");
 	//TODO: am I leaking memory somewhere?
 }
 
 function main(){
-	let drop_zone = document.getElementById("drop_zone");
+	renderMathInElement(document.body, {
+		delimiters: [ {
+			left: "$",
+			right: "$",
+			display: false
+		} ]
+	});
+	
+	let drop_zone = document.getElementById("Alice");
 	drop_zone.addEventListener("drop", dragHandlers.drop);
 	drop_zone.addEventListener("dragenter", dragHandlers.enter);
 	drop_zone.addEventListener("dragleave", dragHandlers.leave);
 	drop_zone.addEventListener("dragover", dragHandlers.over);
 	drop_zone.addEventListener("dragend", dragHandlers.end);
+	
 	document.getElementById("get_image").addEventListener("change", changeHandler);
 	document.getElementById("sent").addEventListener("load", imageChanged);
+	
 	let probability_slider = document.getElementById("error_probability");
 	probability_slider.addEventListener("change", errorProbabilityChanged);
 	probability_slider.addEventListener("input", errorProbabilityMoved);

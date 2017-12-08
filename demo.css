@@ -16,6 +16,9 @@ canvas { display: none; }
 main {
 	flex-grow: 1;
 	flex-shrink: 1;
+}
+
+main, footer {
 	display: flex;
 	justify-content: space-around;
 	justify-content: space-evenly;
@@ -42,18 +45,26 @@ main img {
 	max-width: 100%;
 }
 
-#drop_zone {
+#Alice, #Bob {
+	transition:
+		outline-offset 0.3s,
+		color 0.3s,
+		background-color 0.5s
+	;
+	transition-timing-function: ease-in-out;
+}
+
+#Alice {
 	outline: 2px dashed currentColor;
 	outline-offset: -2px;
-	transition: all 0.3s;
 	cursor: pointer;
 }
 
-#drop_zone * {
+#Alice * {
 	pointer-events: none;
 }
 
-#drop_zone:hover, #drop_zone.mid_drag {
+#Alice:hover, #Alice.mid_drag {
 	color: red;
 	outline-offset: -6px;
 	background: #fff0f0;
@@ -61,8 +72,46 @@ main img {
 
 #get_image { display: none; }
 
-footer output {
-	display: inline-block;
-	width: 2.5em;
+.recomputing {
+	background: #d8d8d8;
+}
+
+footer {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+footer h2 {
+	flex-basis: 100%;
+}
+
+footer fieldset {
+	width: 32%;
+	box-sizing: border-box;
+	border: 0;
+}
+
+footer fieldset label {
+	display: block;
+}
+
+label[for=error_probability] {
+	display: flex;
+}
+
+output[for="error_probability"] {
+	width: 3.5em;
 	text-align: right;
+	margin-right: 8px;
+}
+
+#error_probability {
+	vertical-align: middle;
+	flex-grow: 1;
+}
+
+
+
+#message_units span {
+	display: none;
 }

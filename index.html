@@ -4,6 +4,10 @@
 	<title>Coding theory demo</title>
 	<script src="demo.js"></script>
 	<link rel="stylesheet" type="text/css" href="demo.css" />
+	<!-- KaTeX -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css" integrity="sha384-exe4Ak6B0EoJI0ogGxjJ8rn+RN3ftPnEQrGwX59KTCl5ybGzvHGKjhPKk/KC3abb" crossorigin="anonymous">
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js" integrity="sha384-OMvkZ24ANLwviZR2lVq8ujbE/bUO8IR1FdBrKLQBI14Gq5Xp/lksIccGkmKL8m+h" crossorigin="anonymous"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script>
 </head>
 <body>
 	<header>
@@ -11,29 +15,59 @@
 	</header>
 	<canvas></canvas>
 	<main>
-		<label id="drop_zone" for="get_image">
+		<label id="Alice" for="get_image">
 			<img id="sent" />
 			<input id="get_image" type="file" accept="image/*"></input>
 			<p><strong>Choose a file</strong> or drag it here.</p>
 		</label>
-		<section>
+		<section id="Bob">
 			<img id="received" />
 			<p>Image after transmission</p>
 		</section>
-		<section>
+		<section id="Bob_decoded">
 			<img id="computed" />
 			<p>Image after correction</p>
 		</section>
 	</main>
 	<footer>
 		<h2>Settings</h2>
-		<label for="error_probability">Error probability: <output for="error_probability">15.0</output>%</label>
-		<input id="error_probability" type="range" list="tickmarks" min="0", max="1" step="any" value="0.15" />
-		<datalist id="tickmarks">
-			<option value="0" label="0%" >
-			<option value="0.5" label="50%" >
-			<option value="1" label="100%" >
-		</datalist>
+		<fieldset id="channel">
+			<label for="error_probability">Error rate: <output for="error_probability"></output>
+				<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
+				<datalist id="tickmarks">
+					<!--option value="0" label="0%" -->
+					<option value="0.5" label="50%" >
+					<!--option value="1" label="100%" -->
+				</datalist>
+			</label>
+		</fieldset>
+		
+		<fieldset id="code_choice">
+			<label for="code">Code:
+				<select id="code">
+					<option data-dimension="8"  label="[16, 8]-repetition"         value="2xrep"   />
+					<option data-dimension="8"  label="[24, 8]-repetition"         value="3xrep"   />
+					<option data-dimension="4"  label="Hamming [7,4]"              value="Ham(3)"  />
+					<option data-dimension="12" label="Extended Hamming [8,4]"     value="Ham+(3)" />
+					<option data-dimension="24" label="Single check-digit [25,24]" value="check1"  />
+				</select>
+			</label>
+		
+			<label for="message_units">Message units:
+				<output id="message_units">
+					<span id="dim_4">Separate half-colors $r = r_0 r_1 \in ({\mathbb{Z}_2}^4)^2$</span>
+					<span id="dim_8">Separate colors $r, g, b \in {\mathbb{Z}_2}^8$</span>
+					<span id="dim_12">Single half-string $s = s_0 s_1 \in ({\mathbb{Z}_2}^12)^2$</span>
+					<span id="dim_24">Single string $s = rgb \in {\mathbb{Z}_2}^{24}$</span>
+				</output>
+			</label>
+		
+			<label for="information_rate">Information rate: <output id="information_rate"></output></label>
+		</fieldset>
+		<fieldset id="simulation_stats">
+			<label for="error_detection_rate">Error detection rate: <output id="error_detection_rate"></output></label>
+			<label for="correct_correction_rate">Correct corrections: <output id="correct_correction_rate"></output></label>
+		</fieldset>
 	</footer>
 </body>
 </html>
