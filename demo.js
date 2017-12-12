@@ -154,13 +154,14 @@ function imageChanged(){
 }
 
 function main(){
-	renderMathInElement(document.body, {
+	/* renderMathInElement(document.body, {
 		delimiters: [ {
 			left: "$",
 			right: "$",
 			display: false
 		} ]
 	});
+	*/
 	
 	let drop_zone = document.body;
 	drop_zone.addEventListener("drop", dragHandlers.drop);

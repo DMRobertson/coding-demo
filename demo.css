@@ -78,6 +78,7 @@ main img {
 
 .out_of_date {
 	background: #d8d8d8;
+	color: #888;
 }
 
 .recomputing {
