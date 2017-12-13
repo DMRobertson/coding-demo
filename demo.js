@@ -112,18 +112,34 @@ function errorProbabilityChanged(){
 }
 
 function imageChanged(){
-	if (this.naturalWidth === 0 || this.naturalHeight === 0){
-		return;
-	}
-	document.getElementById("Bob").classList.add("recomputing");
 	let canvas = document.querySelector("canvas");
 	let ctx = canvas.getContext("2d", {alpha: false});
-	// Setup canvas to be the static image
-	let overscale = Math.max(1, this.naturalWidth/600, this.naturalHeight/600);
-	canvas.width = Math.ceil(this.naturalWidth/overscale);
-	canvas.height = Math.ceil(this.naturalHeight/overscale);
-	ctx.drawImage(this, 0, 0, canvas.width, canvas.height);
+	let success = paintImageOnCanvas(this, canvas, ctx);
+	if (!success){
+		return;
+	}
 	
+	let imageData = simulateNoise(canvas, ctx);
+	ctx.putImageData(imageData, 0, 0);
+	document.getElementById('received').src = canvas.toDataURL();
+	document.getElementById('Bob').classList.remove("recomputing");
+	document.getElementById("Bob").classList.remove("out_of_date");
+}
+
+function paintImageOnCanvas(image, canvas, ctx){
+	if (image.naturalWidth === 0 || image.naturalHeight === 0){
+		return false;
+	}
+	document.getElementById("Bob").classList.add("recomputing");
+	// Setup canvas to be the static image
+	let overscale = Math.max(1, image.naturalWidth/600, image.naturalHeight/600);
+	canvas.width = Math.ceil(image.naturalWidth/overscale);
+	canvas.height = Math.ceil(image.naturalHeight/overscale);
+	ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+	return true;
+}
+
+function simulateNoise(canvas, ctx){
 	//Simulate noise according to the channel settings
 	let settings = getSettings();
 	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -146,11 +162,7 @@ function imageChanged(){
 		pixels[index + 1] = g;
 		pixels[index + 2] = b;
 	}
-	ctx.putImageData(imageData, 0, 0);
-	document.getElementById('received').src = canvas.toDataURL();
-	document.getElementById('Bob').classList.remove("recomputing");
-	document.getElementById("Bob").classList.remove("out_of_date");
-	//TODO: am I leaking memory somewhere?
+	return imageData;
 }
 
 function main(){
@@ -176,6 +188,7 @@ function main(){
 	let probability_slider = document.getElementById("error_probability");
 	probability_slider.addEventListener("change", errorProbabilityChanged);
 	probability_slider.addEventListener("input", errorProbabilityMoved);
+	errorProbabilityMoved.call(probability_slider);
 }
 
 document.addEventListener("DOMContentLoaded", main);

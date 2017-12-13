@@ -46,7 +46,7 @@ main > * {
 	flex-direction: column;
 	justify-content: space-between;
 	align-items: center;
-	transition: color, background-color, border-color, ease-in-out 0.1s;
+	transition: opacity, color, background-color, border-color, ease-in-out 0.1s;
 }
 
 main img {
@@ -77,12 +77,11 @@ main img {
 #get_image { display: none; }
 
 .out_of_date {
-	background: #d8d8d8;
-	color: #888;
+	opacity: 0.3;
 }
 
 .recomputing {
-	background: #eee;
+	opacity: 0.6;
 }
 
 footer {
