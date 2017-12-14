@@ -1,5 +1,23 @@
 "use strict"
 
+class WorkerPool {
+	constructor(size){
+		this.size = size;
+		this.workers = new Array(this.size);
+		for (let i = 0; i < this.size; i++){
+			this.workers[i] = new Worker("compute.js");
+		}
+	}
+	
+	simulateNoise(bytes, callback){
+		for (let i = 0; i < this.size; i++){
+			console.log("posting to " + i.toString() );
+			this.workers[i].postMessage("hello " + i.toString());
+		}
+	}
+}
+var workers = new WorkerPool(4);
+
 function DTHasFile(dt){
 	if (dt.items) {
 		for (let i = 0; i < dt.items.length; i++) {
@@ -78,22 +96,7 @@ function loadFile(file){
 
 function getSettings(){
 	const defaultSettings = {
-		encode: x => x,
-		encoded_length: 24, //for now let's assume this is less than 32
 		error_probability: 0.15,
-		apply_noise: function(x){
-			let mask = 1;
-			for (let i = 0; i < this.encoded_length; i++){
-				if (Math.random() < this.error_probability){
-					x ^= mask;
-				}
-				mask <<= 1;
-			}
-			return x;
-		},
-		transmit: function(x){
-			return this.apply_noise(this.encode(x))
-		},
 	}
 	
 	let settings = Object.create(defaultSettings);
@@ -119,7 +122,13 @@ function imageChanged(){
 		return;
 	}
 	
-	let imageData = simulateNoise(canvas, ctx);
+	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	workers.simulateNoise(data, function(){
+		applyNoise(imageData, canvas, ctx);
+	});
+}
+
+function applyNoise(imageData, canvas, ctx){
 	ctx.putImageData(imageData, 0, 0);
 	document.getElementById('received').src = canvas.toDataURL();
 	document.getElementById('Bob').classList.remove("recomputing");
@@ -137,32 +146,6 @@ function paintImageOnCanvas(image, canvas, ctx){
 	canvas.height = Math.ceil(image.naturalHeight/overscale);
 	ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 	return true;
-}
-
-function simulateNoise(canvas, ctx){
-	//Simulate noise according to the channel settings
-	let settings = getSettings();
-	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	let pixels = imageData.data;
-	const LAST_EIGHT_BITS = 0b11111111;
-	// TODO: parallelise with web worker
-	for (let index = 0; index < pixels.length; index += 4){
-		// get message unit
-		let message_unit = 
-			pixels[index]
-			+ (pixels[index + 1] << 8)
-			+ (pixels[index + 2] << 16);
-		let received = settings.transmit(message_unit);
-		let r = received & LAST_EIGHT_BITS;
-		received >>>= 8;
-		let g = received & LAST_EIGHT_BITS;
-		received >>>= 8;
-		let b = received & LAST_EIGHT_BITS;
-		pixels[index] = r;
-		pixels[index + 1] = g;
-		pixels[index + 2] = b;
-	}
-	return imageData;
 }
 
 function main(){
