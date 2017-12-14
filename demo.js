@@ -1,22 +1,70 @@
 "use strict"
 
 class WorkerPool {
-	constructor(size){
-		this.size = size;
-		this.workers = new Array(this.size);
-		for (let i = 0; i < this.size; i++){
+	constructor(){
+		this.computing = false;
+		this.requestedOperation = null;
+		this.requestedCallback = null;
+		this.workers = new Array(4);
+		for (let i = 0; i < 4; i++){
 			this.workers[i] = new Worker("compute.js");
 		}
 	}
 	
-	simulateNoise(bytes, callback){
-		for (let i = 0; i < this.size; i++){
-			console.log("posting to " + i.toString() );
-			this.workers[i].postMessage("hello " + i.toString());
+	makeWorkerCompletionHandler(callback){
+		let completed = 0;
+		let instance = this;
+		let handler = function(e){
+			delete this.onmessage;
+			completed++;
+			if (completed == 4){
+				this.computing = false;
+				instance.considerComputation();
+				callback(e);
+			}
+		}
+		return handler;
+	}
+	
+	startComputation(){
+		let handler = this.makeWorkerCompletionHandler(this.requestedCallback);
+		let payloads = new Array(4);
+		for (var i = 0; i < 4; i++){
+			payloads[i] = this.requestedOperation(i);
+			payloads[i].workerId = i;
+			this.workers[i].onmessage = handler;
+		}
+		this.requestedOperation = null;
+		this.requestedCallback = null;
+		for (var i = 0; i < 4; i++){
+			this.workers[i].postMessage(payloads[i]);
+		};
+	}
+		
+	requestComputation(payload, callback){
+		this.requestedOperation = payload;
+		this.requestedCallback = callback;
+		this.considerComputation();
+	}
+	
+	considerComputation(){
+		if (this.requestedOperation !== null && !this.computing){
+			this.startComputation();
 		}
 	}
+	
+	simulateNoise(bytes, callback){
+		let blockSize = bytes.byteLength / 4;
+		let payload = i => ({
+			action: "simulate",
+			bytes: bytes,
+			start: i * blockSize,
+			end: (i+1) * blockSize,
+			rate: document.getElementById("error_probability").valueAsNumber,
+		});
+		this.requestComputation(payload, callback);		
+	}
 }
-var workers = new WorkerPool(4);
 
 function DTHasFile(dt){
 	if (dt.items) {
@@ -44,39 +92,40 @@ function DTGetFile(dt){
 	return false;
 }
 
-let dragHandlers = {
-	"enter": function (e){
-		e.dataTransfer.dropEffect = "link";
-		this.classList.add("mid_drag");
-	},
+function dragEnter (e){
+	e.dataTransfer.dropEffect = "link";
+	this.classList.add("mid_drag");
+}
 	
-	"over": function (e){
-		e.preventDefault();
-	},
+function dragOver (e){
+	e.preventDefault();
+}
 	
-	"leave": function (e){
-		if (!this.contains(e.relatedTarget)){
-			this.classList.remove("mid_drag");
-		}
-	},
-	
-	"drop": function (e){
-		e.preventDefault();
+function dragLeave (e){
+	console.log("LEAVE", e)
+	if (! (this.contains(e.relatedTarget) || (this.contains(e.path[0]) && this !== e.path[0]) ) ){
 		this.classList.remove("mid_drag");
-		if (DTHasFile(e.dataTransfer)){
-			loadFile(DTGetFile(e.dataTransfer));
+	}
+}
+	
+function drop (e){
+	console.log("DROP", e)
+	e.preventDefault();
+	this.classList.remove("mid_drag");
+	if (DTHasFile(e.dataTransfer)){
+		loadFile(DTGetFile(e.dataTransfer));
+	}
+}
+
+/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
+function dragEnd (e) {
+	let dt = ev.dataTransfer;
+	if (dt.items) {
+		for (let i = 0; i < dt.items.length; i++) {
+			dt.items.remove(i);
 		}
-	},
-	/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
-	"end": function (e) {
-		let dt = ev.dataTransfer;
-		if (dt.items) {
-			for (let i = 0; i < dt.items.length; i++) {
-				dt.items.remove(i);
-			}
-		} else {
-			ev.dataTransfer.clearData();
-		}
+	} else {
+		ev.dataTransfer.clearData();
 	}
 }
 
@@ -123,12 +172,17 @@ function imageChanged(){
 	}
 	
 	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	workers.simulateNoise(data, function(){
-		applyNoise(imageData, canvas, ctx);
+	
+	let buffer = new SharedArrayBuffer(canvas.width * canvas.height * 4);
+	let view = new Uint8ClampedArray(buffer);
+	view.set(imageData.data);	
+	workers.simulateNoise(view, function(){
+		applyNoise(imageData, view, canvas, ctx);
 	});
 }
 
-function applyNoise(imageData, canvas, ctx){
+function applyNoise(imageData, view, canvas, ctx){
+	imageData.data.set(view);
 	ctx.putImageData(imageData, 0, 0);
 	document.getElementById('received').src = canvas.toDataURL();
 	document.getElementById('Bob').classList.remove("recomputing");
@@ -148,6 +202,9 @@ function paintImageOnCanvas(image, canvas, ctx){
 	return true;
 }
 
+// global state
+var workers = new WorkerPool();
+
 function main(){
 	/* renderMathInElement(document.body, {
 		delimiters: [ {
@@ -159,11 +216,11 @@ function main(){
 	*/
 	
 	let drop_zone = document.body;
-	drop_zone.addEventListener("drop", dragHandlers.drop);
-	drop_zone.addEventListener("dragenter", dragHandlers.enter);
-	drop_zone.addEventListener("dragleave", dragHandlers.leave);
-	drop_zone.addEventListener("dragover", dragHandlers.over);
-	drop_zone.addEventListener("dragend", dragHandlers.end);
+	drop_zone.addEventListener("drop", drop);
+	drop_zone.addEventListener("dragenter", dragEnter);
+	drop_zone.addEventListener("dragleave", dragLeave);
+	drop_zone.addEventListener("dragover", dragOver);
+	drop_zone.addEventListener("dragend", dragEnd);
 	
 	document.getElementById("get_image").addEventListener("change", changeHandler);
 	document.getElementById("sent").addEventListener("load", imageChanged);

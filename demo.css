@@ -54,7 +54,7 @@ main img {
 	min-width: 0;
 	min-height: 0;
 	object-fit: contain;
-	max-width: 100%;
+	width: 100%;
 }
 
 #Alice {

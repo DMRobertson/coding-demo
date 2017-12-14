@@ -1,16 +1,36 @@
-// const LAST_EIGHT_BITS = 0b11111111;
+function randomErrorPattern(byte, rate){
+	let mask = 1;
+	for (let i = 0; i < 8; i++){
+		if (Math.random() < rate){
+			byte ^= mask;
+		}
+		mask <<= 1;
+	}
+	return byte;
+}
 
-// function randByte(){
-	// near-enough uniform over ints in [0, 256).
-	// return Math.floor(Math.random() * 256);
-// }
-
-// function simulateNoise(bytes, start, width){
-	// for (let index = start; index < start + width; index += 4){
-		// bytes[index] ^= randByte();
-	// }
-// }
+function simulate(bytes, start, end, rate) {
+	for (let index = start; index < end; index += 4){
+		for (let j = 0; j < 3; j++){
+			bytes[index + j] = randomErrorPattern(bytes[index + j], rate);
+			// ignore alpha channel
+		}
+	}
+}
 
 onmessage = function(e){
-	console.log(e);
+	let d = e.data;
+	switch (d.action){
+		case "simulate":
+			simulate(d.bytes, d.start, d.end, d.rate);
+
+			postMessage({
+				action: "simulate",
+				workerId: e.data.workerId,
+				status: "complete"
+			})
+			break;
+		default:
+			console.log(e.data);
+	}
 }
