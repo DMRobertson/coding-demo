@@ -49,6 +49,7 @@ class WorkerPool {
 		this.completed += 1;
 		if (this.completed == 4){
 			this.computing = false;
+			//TODO: use requestAnimationFrame for firing the callback?
 			this.callback(e);
 			this.callback = null;
 			this.completedRequests += 1;
