@@ -1,16 +1,13 @@
 body {
 	font-family: sans-serif;
-	padding: 8px;
+	padding: 2px;
 	margin: 0;
 	user-select: none;
-	outline: 2px dashed black;
-	outline-offset: 2px;
+	border: 6px solid white;
+	background: white;
 	
-	transition:
-		outline-offset 0.3s,
-		outline-color 0.3s,
-		background-color 0.5s
-	;
+	transition:	border-color, background-color;
+	transition-duration: 0.5s;
 	
 	display: flex;
 	flex-direction: column;
@@ -63,8 +60,7 @@ main img {
 }
 
 .mid_drag {
-	outline-color: red;
-	outline-offset: -12px;
+	border-color: red;
 	background: #fff4f4;
 }
 
