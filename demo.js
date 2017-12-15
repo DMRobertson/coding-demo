@@ -2,54 +2,57 @@
 
 class WorkerPool {
 	constructor(){
-		this.computing = false;
-		this.requestedOperation = null;
-		this.requestedCallback = null;
 		this.workers = new Array(4);
+		let handler = this.onCompletion.bind(this);
 		for (let i = 0; i < 4; i++){
 			this.workers[i] = new Worker("compute.js");
-		}
-	}
-	
-	makeWorkerCompletionHandler(callback){
-		let completed = 0;
-		let instance = this;
-		let handler = function(e){
-			delete this.onmessage;
-			completed++;
-			if (completed == 4){
-				this.computing = false;
-				instance.considerComputation();
-				callback(e);
-			}
-		}
-		return handler;
-	}
-	
-	startComputation(){
-		let handler = this.makeWorkerCompletionHandler(this.requestedCallback);
-		let payloads = new Array(4);
-		for (var i = 0; i < 4; i++){
-			payloads[i] = this.requestedOperation(i);
-			payloads[i].workerId = i;
 			this.workers[i].onmessage = handler;
 		}
-		this.requestedOperation = null;
-		this.requestedCallback = null;
-		for (var i = 0; i < 4; i++){
-			this.workers[i].postMessage(payloads[i]);
-		};
-	}
+		this.request = null;
 		
+		this.computing = false;
+		this.completed = 0;
+		this.callback = null;
+
+		this.numRequests = 0;
+		this.completedRequests = 0;
+	}
+	
 	requestComputation(payload, callback){
-		this.requestedOperation = payload;
-		this.requestedCallback = callback;
+		this.numRequests += 1;
+		this.request = [payload, callback];
 		this.considerComputation();
 	}
 	
 	considerComputation(){
-		if (this.requestedOperation !== null && !this.computing){
+		if (this.request !== null && !this.computing){
 			this.startComputation();
+		}
+	}
+	
+	startComputation(){
+		this.computing = true;
+		this.completed = 0;
+		
+		let payloadFactory = this.request[0];
+		this.callback = this.request[1];
+		this.request = null;
+		
+		for (var i = 0; i < 4; i++){
+			let payload = payloadFactory(i);
+			payload.workerId = i;
+			this.workers[i].postMessage(payload);
+		}
+	}
+	
+	onCompletion(e){
+		this.completed += 1;
+		if (this.completed == 4){
+			this.computing = false;
+			this.callback(e);
+			this.callback = null;
+			this.completedRequests += 1;
+			this.considerComputation();
 		}
 	}
 	
@@ -172,7 +175,6 @@ function imageChanged(){
 	}
 	
 	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	
 	let buffer = new SharedArrayBuffer(canvas.width * canvas.height * 4);
 	let view = new Uint8ClampedArray(buffer);
 	view.set(imageData.data);	

@@ -31,6 +31,6 @@ onmessage = function(e){
 			})
 			break;
 		default:
-			console.log(e.data);
+			break;
 	}
 }
