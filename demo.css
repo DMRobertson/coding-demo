@@ -16,8 +16,6 @@ body {
 	justify-items: stretch;
 }
 
-canvas { display: none; }
-
 main {
 	flex-grow: 1;
 	flex-shrink: 1;
@@ -46,17 +44,15 @@ main > * {
 	transition: opacity, color, background-color, border-color, ease-in-out 0.1s;
 }
 
-main img {
+canvas {
 	flex-shrink: 1;
-	min-width: 0;
 	min-height: 0;
-	object-fit: contain;
 	width: 100%;
+	object-fit: contain;
 }
 
 #Alice {
 	cursor: pointer;
-	pointer-events: auto;
 }
 
 .mid_drag {

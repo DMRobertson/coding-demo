@@ -13,19 +13,18 @@
 	<header>
 		<h1>Coding theory demo</h1>
 	</header>
-	<canvas></canvas>
 	<main>
 		<label id="Alice" for="get_image">
-			<img id="sent" />
+			<canvas id="sent" width="0" height="0"></canvas>
 			<input id="get_image" type="file" accept="image/*">
 			<p><strong>Choose a file</strong> or drag it to the page.</p>
 		</label>
 		<section id="Bob">
-			<img id="received" />
+			<canvas id="received"></canvas>
 			<p>Image after transmission</p>
 		</section>
 		<section id="Bob_decoded">
-			<img id="computed" />
+			<canvas id="computed"></canvas>
 			<p>Image after correction</p>
 		</section>
 	</main>

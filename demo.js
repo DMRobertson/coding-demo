@@ -69,32 +69,6 @@ class WorkerPool {
 	}
 }
 
-function DTHasFile(dt){
-	if (dt.items) {
-		for (let i = 0; i < dt.items.length; i++) {
-			if (dt.items[i].kind == "file") {
-				return true;
-			}
-		}
-	} else if (dt.files.length > 0) {
-		return true;
-	}
-	return false;
-}
-
-function DTGetFile(dt){
-	if (dt.items) {
-		for (let i = 0; i < dt.items.length; i++) {
-			if (dt.items[i].kind == "file") {
-				return dt.items[i].getAsFile();
-			}
-		}
-	} else if (dt.files.length > 0) {
-		return dt.files[0];
-	}
-	return false;
-}
-
 function dragEnter (e){
 	e.dataTransfer.dropEffect = "link";
 	this.classList.add("mid_drag");
@@ -103,21 +77,19 @@ function dragEnter (e){
 function dragOver (e){
 	e.preventDefault();
 }
-	
+
+
+//TODO: better distinguish between "leaving" in the sense of dragging over a child element and "leaving" the page. At least on my machine, if I quickly dragged in an item to the page sometimes leave events would fire with e.relatedTarget === null when my mouse was still over the page.
 function dragLeave (e){
-	console.log("LEAVE", e)
-	if (! (this.contains(e.relatedTarget) || (this.contains(e.path[0]) && this !== e.path[0]) ) ){
+	if (e.relatedTarget === null){
 		this.classList.remove("mid_drag");
 	}
 }
 	
 function drop (e){
-	console.log("DROP", e)
 	e.preventDefault();
 	this.classList.remove("mid_drag");
-	if (DTHasFile(e.dataTransfer)){
-		loadFile(DTGetFile(e.dataTransfer));
-	}
+	loadFile(e.dataTransfer);
 }
 
 /* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
@@ -132,18 +104,80 @@ function dragEnd (e) {
 	}
 }
 
-function changeHandler(e){
+function filePickerHandler(e){
 	if (this.files.length > 0){
 		loadFile(this.files[0]);
 	}
 }
 
-function loadFile(file){
-	let fr = new FileReader();
-	fr.onload = function () {
-		document.getElementById('sent').src = fr.result;
+function DTGetFile(dt){
+	if (dt.items) {
+		for (let i = 0; i < dt.items.length; i++) {
+			if (dt.items[i].kind == "file") {
+				return dt.items[i].getAsFile();
+			}
+		}
+	} else if (dt.files.length > 0) {
+		return dt.files[0];
 	}
-	fr.readAsDataURL(file);
+	return null;
+}
+
+function loadFile(dt){
+	let file = DTGetFile(dt);
+	if (file === null){
+		return;
+	}
+	let url = URL.createObjectURL(file);
+	let img = new Image();
+	img.onload = imageLoaded;
+	img.src = url;
+}
+
+function imageLoaded(e){
+	URL.revokeObjectURL(this.src);
+	
+	// Set canvas dimensions
+	let overscale = Math.max(1, this.naturalWidth/600, this.naturalHeight/600);
+	// TODO: should this be ceil or floor?
+	let width = Math.ceil(this.naturalWidth/overscale);
+	let height = Math.ceil(this.naturalHeight/overscale);
+	
+	let canvases = document.getElementsByTagName("canvas");
+	for (let i = 0; i < canvases.length; i++){
+		canvases[i].width = width;
+		canvases[i].height = height;
+	}
+	
+	// Display user image
+	let sent = document.getElementById("sent");
+	let sentCtx = sent.getContext('2d', {alpha: false});
+	sentCtx.drawImage(this, 0, 0, width, height);
+	
+	applyNoise();
+}
+
+function applyNoise(){
+	let sent = document.getElementById("sent");
+	if ( sent.height === 0 || sent.width === 0){
+		return;
+	}
+	let sentCtx = sent.getContext('2d', {alpha: false});
+	let bob = document.getElementById("Bob");
+	bob.classList.add("recomputing");
+	
+	let imageData = sentCtx.getImageData(0, 0, sent.width, sent.height);
+	let buffer = new SharedArrayBuffer(sent.width * sent.height * 4);
+	let view = new Uint8ClampedArray(buffer);
+	view.set(imageData.data);	
+	
+	workers.simulateNoise(view, function(){
+		imageData.data.set(view);
+		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
+		receivedCtx.putImageData(imageData, 0, 0);
+		bob.classList.remove("recomputing");
+		bob.classList.remove("out_of_date");
+	});
 }
 
 function getSettings(){
@@ -158,50 +192,9 @@ function getSettings(){
 
 function errorProbabilityMoved(){
 	let percentage = (this.value * 100).toFixed(1);
-	document.querySelector("output[for='error_probability']").innerText = percentage + "%";
+	document.querySelector("output[for='" + this.id + "']").innerText = percentage + "%";
 	document.getElementById("Bob").classList.add("out_of_date");
-}
-
-function errorProbabilityChanged(){
-	imageChanged.call(document.getElementById('sent'));
-}
-
-function imageChanged(){
-	let canvas = document.querySelector("canvas");
-	let ctx = canvas.getContext("2d", {alpha: false});
-	let success = paintImageOnCanvas(this, canvas, ctx);
-	if (!success){
-		return;
-	}
-	
-	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	let buffer = new SharedArrayBuffer(canvas.width * canvas.height * 4);
-	let view = new Uint8ClampedArray(buffer);
-	view.set(imageData.data);	
-	workers.simulateNoise(view, function(){
-		applyNoise(imageData, view, canvas, ctx);
-	});
-}
-
-function applyNoise(imageData, view, canvas, ctx){
-	imageData.data.set(view);
-	ctx.putImageData(imageData, 0, 0);
-	document.getElementById('received').src = canvas.toDataURL();
-	document.getElementById('Bob').classList.remove("recomputing");
-	document.getElementById("Bob").classList.remove("out_of_date");
-}
-
-function paintImageOnCanvas(image, canvas, ctx){
-	if (image.naturalWidth === 0 || image.naturalHeight === 0){
-		return false;
-	}
-	document.getElementById("Bob").classList.add("recomputing");
-	// Setup canvas to be the static image
-	let overscale = Math.max(1, image.naturalWidth/600, image.naturalHeight/600);
-	canvas.width = Math.ceil(image.naturalWidth/overscale);
-	canvas.height = Math.ceil(image.naturalHeight/overscale);
-	ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-	return true;
+	applyNoise();
 }
 
 // global state
@@ -224,11 +217,9 @@ function main(){
 	drop_zone.addEventListener("dragover", dragOver);
 	drop_zone.addEventListener("dragend", dragEnd);
 	
-	document.getElementById("get_image").addEventListener("change", changeHandler);
-	document.getElementById("sent").addEventListener("load", imageChanged);
+	document.getElementById("get_image").addEventListener("change", filePickerHandler);
 	
 	let probability_slider = document.getElementById("error_probability");
-	probability_slider.addEventListener("change", errorProbabilityChanged);
 	probability_slider.addEventListener("input", errorProbabilityMoved);
 	errorProbabilityMoved.call(probability_slider);
 }
