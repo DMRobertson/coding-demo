@@ -2,30 +2,29 @@
 <html>
 <head>
 	<title>Coding theory demo</title>
-	<script src="demo.js"></script>
+	<script defer src="demo.js"></script>
 	<link rel="stylesheet" type="text/css" href="demo.css" />
-	<!-- KaTeX -->
+	<!-- KaTeX
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css" integrity="sha384-exe4Ak6B0EoJI0ogGxjJ8rn+RN3ftPnEQrGwX59KTCl5ybGzvHGKjhPKk/KC3abb" crossorigin="anonymous">
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js" integrity="sha384-OMvkZ24ANLwviZR2lVq8ujbE/bUO8IR1FdBrKLQBI14Gq5Xp/lksIccGkmKL8m+h" crossorigin="anonymous"></script>
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script>
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script> -->
 </head>
 <body>
 	<header>
 		<h1>Coding theory demo</h1>
 	</header>
-	<canvas></canvas>
 	<main>
 		<label id="Alice" for="get_image">
-			<img id="sent" />
-			<input id="get_image" type="file" accept="image/*"></input>
+			<canvas id="sent" width="0" height="0"></canvas>
+			<input id="get_image" type="file" accept="image/*">
 			<p><strong>Choose a file</strong> or drag it to the page.</p>
 		</label>
 		<section id="Bob">
-			<img id="received" />
+			<canvas id="received"></canvas>
 			<p>Image after transmission</p>
 		</section>
 		<section id="Bob_decoded">
-			<img id="computed" />
+			<canvas id="computed"></canvas>
 			<p>Image after correction</p>
 		</section>
 	</main>
@@ -45,11 +44,11 @@
 		<fieldset id="code_choice">
 			<label for="code">Code:
 				<select id="code">
-					<option data-dimension="8"  label="[16, 8]-repetition"         value="2xrep"   />
-					<option data-dimension="8"  label="[24, 8]-repetition"         value="3xrep"   />
-					<option data-dimension="4"  label="Hamming [7,4]"              value="Ham(3)"  />
-					<option data-dimension="12" label="Extended Hamming [8,4]"     value="Ham+(3)" />
-					<option data-dimension="24" label="Single check-digit [25,24]" value="check1"  />
+					<option data-dimension="8"  label="[16, 8]-repetition"         value="2xrep"   >
+					<option data-dimension="8"  label="[24, 8]-repetition"         value="3xrep"   >
+					<option data-dimension="4"  label="Hamming [7,4]"              value="Ham(3)"  >
+					<option data-dimension="12" label="Extended Hamming [8,4]"     value="Ham+(3)" >
+					<option data-dimension="24" label="Single check-digit [25,24]" value="check1"  >
 				</select>
 			</label>
 		

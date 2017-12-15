@@ -1,16 +1,113 @@
 "use strict"
 
-function DTHasFile(dt){
+class WorkerPool {
+	constructor(){
+		this.workers = new Array(4);
+		let handler = this.onCompletion.bind(this);
+		for (let i = 0; i < 4; i++){
+			this.workers[i] = new Worker("compute.js");
+			this.workers[i].onmessage = handler;
+		}
+		this.request = null;
+		
+		this.computing = false;
+		this.completed = 0;
+		this.callback = null;
+
+		this.numRequests = 0;
+		this.completedRequests = 0;
+	}
+	
+	requestComputation(payload, callback){
+		this.numRequests += 1;
+		this.request = [payload, callback];
+		this.considerComputation();
+	}
+	
+	considerComputation(){
+		if (this.request !== null && !this.computing){
+			this.startComputation();
+		}
+	}
+	
+	startComputation(){
+		this.computing = true;
+		this.completed = 0;
+		
+		let payloadFactory = this.request[0];
+		this.callback = this.request[1];
+		this.request = null;
+		
+		for (var i = 0; i < 4; i++){
+			let payload = payloadFactory(i);
+			payload.workerId = i;
+			this.workers[i].postMessage(payload);
+		}
+	}
+	
+	onCompletion(e){
+		this.completed += 1;
+		if (this.completed == 4){
+			this.computing = false;
+			this.callback(e);
+			this.callback = null;
+			this.completedRequests += 1;
+			this.considerComputation();
+		}
+	}
+	
+	simulateNoise(bytes, callback){
+		let blockSize = bytes.byteLength / 4;
+		let payload = i => ({
+			action: "simulate",
+			bytes: bytes,
+			start: i * blockSize,
+			end: (i+1) * blockSize,
+			rate: document.getElementById("error_probability").valueAsNumber,
+		});
+		this.requestComputation(payload, callback);		
+	}
+}
+
+function dragEnter (e){
+	e.dataTransfer.dropEffect = "link";
+	this.classList.add("mid_drag");
+}
+	
+function dragOver (e){
+	e.preventDefault();
+}
+
+
+//TODO: better distinguish between "leaving" in the sense of dragging over a child element and "leaving" the page. At least on my machine, if I quickly dragged in an item to the page sometimes leave events would fire with e.relatedTarget === null when my mouse was still over the page.
+function dragLeave (e){
+	if (e.relatedTarget === null){
+		this.classList.remove("mid_drag");
+	}
+}
+	
+function drop (e){
+	e.preventDefault();
+	this.classList.remove("mid_drag");
+	loadFile(e.dataTransfer);
+}
+
+/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
+function dragEnd (e) {
+	let dt = ev.dataTransfer;
 	if (dt.items) {
 		for (let i = 0; i < dt.items.length; i++) {
-			if (dt.items[i].kind == "file") {
-				return true;
-			}
+			dt.items.remove(i);
 		}
-	} else if (dt.files.length > 0) {
-		return true;
+	} else {
+		ev.dataTransfer.clearData();
 	}
-	return false;
+}
+
+function filePickerHandler(e){
+	if (this.files.length > 0){
+		loadFile(this.files[0]);
+	}
 }
 
 function DTGetFile(dt){
@@ -23,77 +120,69 @@ function DTGetFile(dt){
 	} else if (dt.files.length > 0) {
 		return dt.files[0];
 	}
-	return false;
+	return null;
 }
 
-let dragHandlers = {
-	"enter": function (e){
-		e.dataTransfer.dropEffect = "link";
-		this.classList.add("mid_drag");
-	},
-	
-	"over": function (e){
-		e.preventDefault();
-	},
-	
-	"leave": function (e){
-		if (!this.contains(e.relatedTarget)){
-			this.classList.remove("mid_drag");
-		}
-	},
-	
-	"drop": function (e){
-		e.preventDefault();
-		this.classList.remove("mid_drag");
-		if (DTHasFile(e.dataTransfer)){
-			loadFile(DTGetFile(e.dataTransfer));
-		}
-	},
-	/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
-	"end": function (e) {
-		let dt = ev.dataTransfer;
-		if (dt.items) {
-			for (let i = 0; i < dt.items.length; i++) {
-				dt.items.remove(i);
-			}
-		} else {
-			ev.dataTransfer.clearData();
-		}
+function loadFile(dt){
+	let file = DTGetFile(dt);
+	if (file === null){
+		return;
 	}
+	let url = URL.createObjectURL(file);
+	let img = new Image();
+	img.onload = imageLoaded;
+	img.src = url;
 }
 
-function changeHandler(e){
-	if (this.files.length > 0){
-		loadFile(this.files[0]);
+function imageLoaded(e){
+	URL.revokeObjectURL(this.src);
+	
+	// Set canvas dimensions
+	let overscale = Math.max(1, this.naturalWidth/600, this.naturalHeight/600);
+	// TODO: should this be ceil or floor?
+	let width = Math.ceil(this.naturalWidth/overscale);
+	let height = Math.ceil(this.naturalHeight/overscale);
+	
+	let canvases = document.getElementsByTagName("canvas");
+	for (let i = 0; i < canvases.length; i++){
+		canvases[i].width = width;
+		canvases[i].height = height;
 	}
+	
+	// Display user image
+	let sent = document.getElementById("sent");
+	let sentCtx = sent.getContext('2d', {alpha: false});
+	sentCtx.drawImage(this, 0, 0, width, height);
+	
+	applyNoise();
 }
 
-function loadFile(file){
-	let fr = new FileReader();
-	fr.onload = function () {
-		document.getElementById('sent').src = fr.result;
+function applyNoise(){
+	let sent = document.getElementById("sent");
+	if ( sent.height === 0 || sent.width === 0){
+		return;
 	}
-	fr.readAsDataURL(file);
+	let sentCtx = sent.getContext('2d', {alpha: false});
+	let bob = document.getElementById("Bob");
+	bob.classList.add("recomputing");
+	
+	let imageData = sentCtx.getImageData(0, 0, sent.width, sent.height);
+	let buffer = new SharedArrayBuffer(sent.width * sent.height * 4);
+	let view = new Uint8ClampedArray(buffer);
+	view.set(imageData.data);	
+	
+	workers.simulateNoise(view, function(){
+		imageData.data.set(view);
+		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
+		receivedCtx.putImageData(imageData, 0, 0);
+		bob.classList.remove("recomputing");
+		bob.classList.remove("out_of_date");
+	});
 }
 
 function getSettings(){
 	const defaultSettings = {
-		encode: x => x,
-		encoded_length: 24, //for now let's assume this is less than 32
 		error_probability: 0.15,
-		apply_noise: function(x){
-			let mask = 1;
-			for (let i = 0; i < this.encoded_length; i++){
-				if (Math.random() < this.error_probability){
-					x ^= mask;
-				}
-				mask <<= 1;
-			}
-			return x;
-		},
-		transmit: function(x){
-			return this.apply_noise(this.encode(x))
-		},
 	}
 	
 	let settings = Object.create(defaultSettings);
@@ -103,55 +192,13 @@ function getSettings(){
 
 function errorProbabilityMoved(){
 	let percentage = (this.value * 100).toFixed(1);
-	document.querySelector("output[for='error_probability']").innerText = percentage + "%";
+	document.querySelector("output[for='" + this.id + "']").innerText = percentage + "%";
 	document.getElementById("Bob").classList.add("out_of_date");
+	applyNoise();
 }
 
-function errorProbabilityChanged(){
-	imageChanged.call(document.getElementById('sent'));
-}
-
-function imageChanged(){
-	if (this.naturalWidth === 0 || this.naturalHeight === 0){
-		return;
-	}
-	document.getElementById("Bob").classList.add("recomputing");
-	let canvas = document.querySelector("canvas");
-	let ctx = canvas.getContext("2d", {alpha: false});
-	// Setup canvas to be the static image
-	let overscale = Math.max(1, this.naturalWidth/600, this.naturalHeight/600);
-	canvas.width = Math.ceil(this.naturalWidth/overscale);
-	canvas.height = Math.ceil(this.naturalHeight/overscale);
-	ctx.drawImage(this, 0, 0, canvas.width, canvas.height);
-	
-	//Simulate noise according to the channel settings
-	let settings = getSettings();
-	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	let pixels = imageData.data;
-	const LAST_EIGHT_BITS = 0b11111111;
-	// TODO: parallelise with web worker
-	for (let index = 0; index < pixels.length; index += 4){
-		// get message unit
-		let message_unit = 
-			pixels[index]
-			+ (pixels[index + 1] << 8)
-			+ (pixels[index + 2] << 16);
-		let received = settings.transmit(message_unit);
-		let r = received & LAST_EIGHT_BITS;
-		received >>>= 8;
-		let g = received & LAST_EIGHT_BITS;
-		received >>>= 8;
-		let b = received & LAST_EIGHT_BITS;
-		pixels[index] = r;
-		pixels[index + 1] = g;
-		pixels[index + 2] = b;
-	}
-	ctx.putImageData(imageData, 0, 0);
-	document.getElementById('received').src = canvas.toDataURL();
-	document.getElementById('Bob').classList.remove("recomputing");
-	document.getElementById("Bob").classList.remove("out_of_date");
-	//TODO: am I leaking memory somewhere?
-}
+// global state
+var workers = new WorkerPool();
 
 function main(){
 	/* renderMathInElement(document.body, {
@@ -164,18 +211,17 @@ function main(){
 	*/
 	
 	let drop_zone = document.body;
-	drop_zone.addEventListener("drop", dragHandlers.drop);
-	drop_zone.addEventListener("dragenter", dragHandlers.enter);
-	drop_zone.addEventListener("dragleave", dragHandlers.leave);
-	drop_zone.addEventListener("dragover", dragHandlers.over);
-	drop_zone.addEventListener("dragend", dragHandlers.end);
+	drop_zone.addEventListener("drop", drop);
+	drop_zone.addEventListener("dragenter", dragEnter);
+	drop_zone.addEventListener("dragleave", dragLeave);
+	drop_zone.addEventListener("dragover", dragOver);
+	drop_zone.addEventListener("dragend", dragEnd);
 	
-	document.getElementById("get_image").addEventListener("change", changeHandler);
-	document.getElementById("sent").addEventListener("load", imageChanged);
+	document.getElementById("get_image").addEventListener("change", filePickerHandler);
 	
 	let probability_slider = document.getElementById("error_probability");
-	probability_slider.addEventListener("change", errorProbabilityChanged);
 	probability_slider.addEventListener("input", errorProbabilityMoved);
+	errorProbabilityMoved.call(probability_slider);
 }
 
 document.addEventListener("DOMContentLoaded", main);
