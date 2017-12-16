@@ -12,6 +12,7 @@ class WorkerPool {
 		
 		this.computing = false;
 		this.completed = 0;
+		this.results = new Array(4);
 		this.callback = null;
 
 		this.numRequests = 0;
@@ -47,25 +48,45 @@ class WorkerPool {
 	
 	onCompletion(e){
 		this.completed += 1;
+		this.results[e.data.workerId] = e.data;
 		if (this.completed == 4){
-			this.computing = false;
-			this.callback(e);
-			this.callback = null;
-			this.completedRequests += 1;
-			this.considerComputation();
+			let instance = this;
+			requestAnimationFrame(function(timestamp){
+				instance.callback(instance.results);
+				instance.callback = null;
+				instance.results = new Array(4);
+				instance.completedRequests += 1;
+				instance.computing = false;
+				instance.considerComputation();
+			});
 		}
 	}
 	
 	simulateNoise(bytes, callback){
 		let blockSize = bytes.byteLength / 4;
 		let payload = i => ({
-			action: "simulate",
+			action: "simulateNoise",
 			bytes: bytes,
 			start: i * blockSize,
 			end: (i+1) * blockSize,
 			rate: document.getElementById("error_probability").valueAsNumber,
 		});
-		this.requestComputation(payload, callback);		
+		const assembleResults = function(results){
+			let output = {
+				bitErrors: 0,
+				byteErrors: 0,
+				bitsSent: 0,
+				bytesSent: 0,
+			};
+			for (let i = 0; i < 4; i++){
+				output.bitErrors += results[i].bitErrors;
+				output.byteErrors += results[i].byteErrors;
+				output.bitsSent += results[i].bitsSent;
+				output.bytesSent += results[i].bytesSent;
+			}
+			callback(output);
+		}
+		this.requestComputation(payload, assembleResults);
 	}
 }
 
@@ -78,22 +99,22 @@ function dragOver (e){
 	e.preventDefault();
 }
 
-
-//TODO: better distinguish between "leaving" in the sense of dragging over a child element and "leaving" the page. At least on my machine, if I quickly dragged in an item to the page sometimes leave events would fire with e.relatedTarget === null when my mouse was still over the page.
 function dragLeave (e){
+	//TODO: better distinguish between "leaving" in the sense of dragging over a child element and "leaving" the page. At least on my machine, if I quickly dragged in an item to the page sometimes leave events would fire with e.relatedTarget === null when my mouse was still over the page.
 	if (e.relatedTarget === null){
 		this.classList.remove("mid_drag");
 	}
 }
-	
+
 function drop (e){
 	e.preventDefault();
 	this.classList.remove("mid_drag");
 	loadFile(e.dataTransfer);
 }
 
-/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
 function dragEnd (e) {
+	/* I don't understand why this needed if the dropzone will only receive image files.
+	Dragend fires on the thing being dragged, which is outside of the browser's control. */
 	let dt = ev.dataTransfer;
 	if (dt.items) {
 		for (let i = 0; i < dt.items.length; i++) {
@@ -163,20 +184,18 @@ function applyNoise(){
 		return;
 	}
 	let sentCtx = sent.getContext('2d', {alpha: false});
-	let bob = document.getElementById("Bob");
-	bob.classList.add("recomputing");
 	
 	let imageData = sentCtx.getImageData(0, 0, sent.width, sent.height);
 	let buffer = new SharedArrayBuffer(sent.width * sent.height * 4);
 	let view = new Uint8ClampedArray(buffer);
-	view.set(imageData.data);	
+	view.set(imageData.data);
 	
-	workers.simulateNoise(view, function(){
+	workers.simulateNoise(view, function(result){
 		imageData.data.set(view);
 		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
 		receivedCtx.putImageData(imageData, 0, 0);
-		bob.classList.remove("recomputing");
-		bob.classList.remove("out_of_date");
+		let byteRateDisplay = document.getElementById('error_rate_byte');
+		byteRateDisplay.innerText = (result.byteErrors/result.bytesSent * 100).toFixed(1) + '%';
 	});
 }
 
@@ -193,7 +212,6 @@ function getSettings(){
 function errorProbabilityMoved(){
 	let percentage = (this.value * 100).toFixed(1);
 	document.querySelector("output[for='" + this.id + "']").innerText = percentage + "%";
-	document.getElementById("Bob").classList.add("out_of_date");
 	applyNoise();
 }
 
