@@ -62,14 +62,16 @@ class WorkerPool {
 		}
 	}
 	
-	simulateNoise(bytes, callback){
-		let blockSize = bytes.byteLength / 4;
+	simulateNoise(raw, callback){
+		let settings = getSettings();
+		let blockSize = raw.byteLength / 4;
+		// TODO: does this break if the number of pixels isn't a multiple of 4?
 		let payload = i => ({
 			action: "simulateNoise",
-			bytes: bytes,
+			raw: raw,
 			start: i * blockSize,
 			end: (i+1) * blockSize,
-			rate: document.getElementById("error_probability").valueAsNumber,
+			settings: settings
 		});
 		const assembleResults = function(results){
 			let output = {
@@ -187,11 +189,11 @@ function applyNoise(){
 	
 	let imageData = sentCtx.getImageData(0, 0, sent.width, sent.height);
 	let buffer = new SharedArrayBuffer(sent.width * sent.height * 4);
-	let view = new Uint8ClampedArray(buffer);
-	view.set(imageData.data);
+	let raw = new Uint8ClampedArray(buffer);
+	raw.set(imageData.data);
 	
-	workers.simulateNoise(view, function(result){
-		imageData.data.set(view);
+	workers.simulateNoise(raw, function(result){
+		imageData.data.set(raw);
 		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
 		receivedCtx.putImageData(imageData, 0, 0);
 		let byteRateDisplay = document.getElementById('error_rate_byte');
@@ -200,13 +202,10 @@ function applyNoise(){
 }
 
 function getSettings(){
-	const defaultSettings = {
-		error_probability: 0.15,
-	}
-	
-	let settings = Object.create(defaultSettings);
-	settings.error_probability = document.getElementById("error_probability").valueAsNumber;
-	return settings;
+	return {
+		bitErrorRate: document.getElementById("error_probability").valueAsNumber,
+		code: document.getElementById("code").value,
+	};
 }
 
 function errorProbabilityMoved(){
@@ -218,16 +217,28 @@ function errorProbabilityMoved(){
 // global state
 var workers = new WorkerPool();
 
+function checkForHelp(e){
+	console.log(e);
+	if (e.target.hasAttribute('title')){
+		let info = document.getElementById('info');
+		let infoText = info.getElementsByTagName('p')[0];
+		infoText.innerText = e.target.getAttribute('title');
+		renderMathInElement(infoText, {
+			delimiters: [ {
+				left: "$",
+				right: "$",
+				display: false
+			} ]
+		});
+		info.classList.remove("hidden");
+	}
+}
+
+function closeInfoBox(e){
+	document.getElementById('info').classList.add("hidden");
+}
+
 function main(){
-	/* renderMathInElement(document.body, {
-		delimiters: [ {
-			left: "$",
-			right: "$",
-			display: false
-		} ]
-	});
-	*/
-	
 	let drop_zone = document.body;
 	drop_zone.addEventListener("drop", drop);
 	drop_zone.addEventListener("dragenter", dragEnter);
@@ -240,6 +251,9 @@ function main(){
 	let probability_slider = document.getElementById("error_probability");
 	probability_slider.addEventListener("input", errorProbabilityMoved);
 	errorProbabilityMoved.call(probability_slider);
+	
+	document.addEventListener('click', checkForHelp);
+	document.getElementById('close').addEventListener('click', closeInfoBox);
 }
 
 document.addEventListener("DOMContentLoaded", main);

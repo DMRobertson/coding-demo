@@ -1,13 +1,14 @@
 <!doctype html>
 <html>
 <head>
+	<meta charset="utf-8" />
 	<title>Coding theory demo</title>
 	<script defer src="demo.js"></script>
 	<link rel="stylesheet" type="text/css" href="demo.css" />
-	<!-- KaTeX
+	<!-- KaTeX -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css" integrity="sha384-exe4Ak6B0EoJI0ogGxjJ8rn+RN3ftPnEQrGwX59KTCl5ybGzvHGKjhPKk/KC3abb" crossorigin="anonymous">
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js" integrity="sha384-OMvkZ24ANLwviZR2lVq8ujbE/bUO8IR1FdBrKLQBI14Gq5Xp/lksIccGkmKL8m+h" crossorigin="anonymous"></script>
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script> -->
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script>
 </head>
 <body>
 	<header>
@@ -42,11 +43,11 @@
 		</fieldset>
 		
 		<fieldset id="code_choice">
-			<h3>Code</h3>
+			<h3 title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as en eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so our message units belong to ${\mathbb{Z}_2}^{24}$.">Code</h3>
 			<label for="code">Code:
 				<select id="code">
-					<option data-dimension="8"  label="[16, 8]-repetition"         value="2xrep"   >
-					<option data-dimension="8"  label="[24, 8]-repetition"         value="3xrep"   >
+					<option data-dimension="8"  label="[16, 8]-repetition"         value="rep2x"   >
+					<option data-dimension="8"  label="[24, 8]-repetition"         value="rep3x"   >
 					<option data-dimension="4"  label="Hamming [7,4]"              value="Ham(3)"  >
 					<option data-dimension="12" label="Extended Hamming [8,4]"     value="Ham+(3)" >
 					<option data-dimension="24" label="Single check-digit [25,24]" value="check1"  >
@@ -65,11 +66,20 @@
 			<label for="information_rate">Information rate: <output id="information_rate"></output></label>
 		</fieldset>
 		<fieldset id="simulation_stats">
-			<h3>Transmission statistics:</h3>
+			<h3>Transmission statistics</h3>
 			<label for="error_rate_byte">Byte error rate: <output id="error_rate_byte"></output></label>
 			<label for="error_detection_rate">Error detection rate: <output id="error_detection_rate"></output></label>
 			<label for="correct_correction_rate">Correct corrections: <output id="correct_correction_rate"></output></label>
 		</fieldset>
 	</footer>
+	<aside id="info" class="hidden">
+		<aside>
+			<span class="emoji">ℹ️</span>
+		</aside>
+		<p>
+			
+		</p>
+		<button id="close">Close</button>
+	</aside>
 </body>
 </html>

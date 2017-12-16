@@ -27,12 +27,12 @@ main, footer {
 	justify-content: space-evenly;
 }
 
-main > *, footer > *{
+body > main > *, footer > *{
 	width: 32%;
 	box-sizing: border-box;
 }
 
-main > * {	
+body > main > * {	
 	border: 1px solid #ccc;
 	padding: 4px;
 	background: #f6f6f6;
@@ -70,7 +70,7 @@ canvas {
 
 footer {
 	display: flex;
-	flex-wrap: wrap;
+	flex-shrink: 0;
 }
 
 footer h2 {
@@ -96,8 +96,45 @@ output[for="error_probability"] {
 	width: 100%;
 }
 
-
-
 #message_units span {
 	display: none;
+}
+
+/* Infobox tooltips */
+
+#info {
+	padding: 4px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	background: #fafafa;
+	border-radius: 0 0 10px 10px;
+	box-shadow: 0 2px 15px black;
+	min-height: 8ex;
+	display: flex;
+	transition: opacity 0.15s;
+}
+
+#info aside {
+	align-self: center;
+	font-size: 4ex;
+	margin: 12px;
+}
+
+.emoji {
+	font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
+}
+
+[title] {
+	cursor: help;
+	text-decoration: dotted underline;
+}
+
+[title]:hover {
+	color: #800;
+}
+
+.hidden, details {
+	opacity: 0;
 }
