@@ -68,14 +68,6 @@ canvas {
 
 #get_image { display: none; }
 
-.out_of_date {
-	opacity: 0.3;
-}
-
-.recomputing {
-	opacity: 0.6;
-}
-
 footer {
 	display: flex;
 	flex-wrap: wrap;
@@ -95,19 +87,13 @@ footer fieldset label {
 	display: block;
 }
 
-label[for=error_probability] {
-	display: flex;
-}
-
 output[for="error_probability"] {
 	width: 3.5em;
 	text-align: right;
-	margin-right: 8px;
 }
 
 #error_probability {
-	vertical-align: middle;
-	flex-grow: 1;
+	width: 100%;
 }
 
 

@@ -184,8 +184,6 @@ function applyNoise(){
 		return;
 	}
 	let sentCtx = sent.getContext('2d', {alpha: false});
-	let bob = document.getElementById("Bob");
-	bob.classList.add("recomputing");
 	
 	let imageData = sentCtx.getImageData(0, 0, sent.width, sent.height);
 	let buffer = new SharedArrayBuffer(sent.width * sent.height * 4);
@@ -196,8 +194,8 @@ function applyNoise(){
 		imageData.data.set(view);
 		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
 		receivedCtx.putImageData(imageData, 0, 0);
-		bob.classList.remove("recomputing");
-		bob.classList.remove("out_of_date");
+		let byteRateDisplay = document.getElementById('error_rate_byte');
+		byteRateDisplay.innerText = (result.byteErrors/result.bytesSent * 100).toFixed(1) + '%';
 	});
 }
 
@@ -214,7 +212,6 @@ function getSettings(){
 function errorProbabilityMoved(){
 	let percentage = (this.value * 100).toFixed(1);
 	document.querySelector("output[for='" + this.id + "']").innerText = percentage + "%";
-	document.getElementById("Bob").classList.add("out_of_date");
 	applyNoise();
 }
 

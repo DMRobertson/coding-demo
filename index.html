@@ -29,20 +29,20 @@
 		</section>
 	</main>
 	<footer>
-		<h2>Settings</h2>
 		<fieldset id="channel">
-			<label>Binary symmetric channel</label>
-			<label for="error_probability">Bit error rate: <output for="error_probability"></output>
-				<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
-				<datalist id="tickmarks">
-					<!--option value="0" label="0%" -->
-					<option value="0.5" label="50%" >
-					<!--option value="1" label="100%" -->
-				</datalist>
+			<h3>Binary symmetric channel</h3>
+			<label title="Whatfor="error_probability">Bit error rate: <output for="error_probability"></output></label>
+			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
+			<datalist id="tickmarks">
+				<!--option value="0" label="0%" -->
+				<option value="0.5" label="50%" >
+				<!--option value="1" label="100%" -->
+			</datalist>
 			</label>
 		</fieldset>
 		
 		<fieldset id="code_choice">
+			<h3>Code</h3>
 			<label for="code">Code:
 				<select id="code">
 					<option data-dimension="8"  label="[16, 8]-repetition"         value="2xrep"   >
@@ -65,6 +65,8 @@
 			<label for="information_rate">Information rate: <output id="information_rate"></output></label>
 		</fieldset>
 		<fieldset id="simulation_stats">
+			<h3>Transmission statistics:</h3>
+			<label for="error_rate_byte">Byte error rate: <output id="error_rate_byte"></output></label>
 			<label for="error_detection_rate">Error detection rate: <output id="error_detection_rate"></output></label>
 			<label for="correct_correction_rate">Correct corrections: <output id="correct_correction_rate"></output></label>
 		</fieldset>
