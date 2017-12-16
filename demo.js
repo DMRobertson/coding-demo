@@ -62,7 +62,7 @@ class WorkerPool {
 	simulateNoise(bytes, callback){
 		let blockSize = bytes.byteLength / 4;
 		let payload = i => ({
-			action: "simulate",
+			action: "simulateNoise",
 			bytes: bytes,
 			start: i * blockSize,
 			end: (i+1) * blockSize,
@@ -81,22 +81,22 @@ function dragOver (e){
 	e.preventDefault();
 }
 
-
-//TODO: better distinguish between "leaving" in the sense of dragging over a child element and "leaving" the page. At least on my machine, if I quickly dragged in an item to the page sometimes leave events would fire with e.relatedTarget === null when my mouse was still over the page.
 function dragLeave (e){
+	//TODO: better distinguish between "leaving" in the sense of dragging over a child element and "leaving" the page. At least on my machine, if I quickly dragged in an item to the page sometimes leave events would fire with e.relatedTarget === null when my mouse was still over the page.
 	if (e.relatedTarget === null){
 		this.classList.remove("mid_drag");
 	}
 }
-	
+
 function drop (e){
 	e.preventDefault();
 	this.classList.remove("mid_drag");
 	loadFile(e.dataTransfer);
 }
 
-/* I don't understand why this needed if the dropzone will only receive image files. Dragend fires on the thing being dragged, which is outside of the browser's control. */
 function dragEnd (e) {
+	/* I don't understand why this needed if the dropzone will only receive image files.
+	Dragend fires on the thing being dragged, which is outside of the browser's control. */
 	let dt = ev.dataTransfer;
 	if (dt.items) {
 		for (let i = 0; i < dt.items.length; i++) {
@@ -172,7 +172,7 @@ function applyNoise(){
 	let imageData = sentCtx.getImageData(0, 0, sent.width, sent.height);
 	let buffer = new SharedArrayBuffer(sent.width * sent.height * 4);
 	let view = new Uint8ClampedArray(buffer);
-	view.set(imageData.data);	
+	view.set(imageData.data);
 	
 	workers.simulateNoise(view, function(){
 		imageData.data.set(view);
