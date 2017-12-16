@@ -12,6 +12,7 @@ class WorkerPool {
 		
 		this.computing = false;
 		this.completed = 0;
+		this.results = new Array(4);
 		this.callback = null;
 
 		this.numRequests = 0;
@@ -47,11 +48,13 @@ class WorkerPool {
 	
 	onCompletion(e){
 		this.completed += 1;
+		this.results[e.data.workerId] = e.data;
 		if (this.completed == 4){
 			let instance = this;
 			requestAnimationFrame(function(timestamp){
 				instance.callback(instance.results);
 				instance.callback = null;
+				instance.results = new Array(4);
 				instance.completedRequests += 1;
 				instance.computing = false;
 				instance.considerComputation();
@@ -68,7 +71,22 @@ class WorkerPool {
 			end: (i+1) * blockSize,
 			rate: document.getElementById("error_probability").valueAsNumber,
 		});
-		this.requestComputation(payload, callback);		
+		const assembleResults = function(results){
+			let output = {
+				bitErrors: 0,
+				byteErrors: 0,
+				bitsSent: 0,
+				bytesSent: 0,
+			};
+			for (let i = 0; i < 4; i++){
+				output.bitErrors += results[i].bitErrors;
+				output.byteErrors += results[i].byteErrors;
+				output.bitsSent += results[i].bitsSent;
+				output.bytesSent += results[i].bytesSent;
+			}
+			callback(output);
+		}
+		this.requestComputation(payload, assembleResults);
 	}
 }
 
@@ -174,7 +192,7 @@ function applyNoise(){
 	let view = new Uint8ClampedArray(buffer);
 	view.set(imageData.data);
 	
-	workers.simulateNoise(view, function(){
+	workers.simulateNoise(view, function(result){
 		imageData.data.set(view);
 		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
 		receivedCtx.putImageData(imageData, 0, 0);
