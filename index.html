@@ -22,17 +22,19 @@
 		</label>
 		<section id="Bob">
 			<canvas id="received"></canvas>
-			<p>Image after transmission</p>
+			<p>Transmission without a code</p>
 		</section>
 		<section id="Bob_decoded">
 			<canvas id="computed"></canvas>
-			<p>Image after correction</p>
+			<p>Image after correction using code</p>
 		</section>
 	</main>
 	<footer>
 		<fieldset id="channel">
-			<h3>Binary symmetric channel</h3>
-			<label title="Whatfor="error_probability">Bit error rate: <output for="error_probability"></output></label>
+			<h3 id="BSC" title="A binary symmetric channel (BSC) is a simple model of a communications channel. The BSC can transmit only two symbols, conventionally chosen to be 0 and 1. Whenever the sender (Alice) sends $n$ symbols in a row, the receiver (Bob) gets $n$ symbols back.
+			
+			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant $0 \leq p \leq 1$, though we usually assume $p < 1/2$. We further assume that error probabilities for different symbols are independent.">Binary symmetric channel</h3>
+			<label for="error_probability">Bit error rate: <output for="error_probability"></output></label>
 			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
 			<datalist id="tickmarks">
 				<!--option value="0" label="0%" -->
@@ -43,7 +45,7 @@
 		</fieldset>
 		
 		<fieldset id="code_choice">
-			<h3 title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as en eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so our message units belong to ${\mathbb{Z}_2}^{24}$.">Code</h3>
+			<h3>Code</h3>
 			<label for="code">Code:
 				<select id="code">
 					<option data-dimension="8"  label="[16, 8]-repetition"         value="rep2x"   >
@@ -54,7 +56,7 @@
 				</select>
 			</label>
 		
-			<label for="message_units">Message units:
+			<label for="message_units" id="message_units_label" title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as en eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so our message units belong to ${\mathbb{Z}_2}^{24}$.">Message units:
 				<output id="message_units">
 					<span id="dim_4">Separate half-colors $r = r_0 r_1 \in ({\mathbb{Z}_2}^4)^2$</span>
 					<span id="dim_8">Separate colors $r, g, b \in {\mathbb{Z}_2}^8$</span>
@@ -76,9 +78,9 @@
 		<aside>
 			<span class="emoji">ℹ️</span>
 		</aside>
-		<p>
+		<main>
 			
-		</p>
+		</main>
 		<button id="close">Close</button>
 	</aside>
 </body>

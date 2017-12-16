@@ -218,20 +218,45 @@ function errorProbabilityMoved(){
 var workers = new WorkerPool();
 
 function checkForHelp(e){
-	console.log(e);
-	if (e.target.hasAttribute('title')){
-		let info = document.getElementById('info');
-		let infoText = info.getElementsByTagName('p')[0];
-		infoText.innerText = e.target.getAttribute('title');
-		renderMathInElement(infoText, {
-			delimiters: [ {
-				left: "$",
-				right: "$",
-				display: false
-			} ]
-		});
-		info.classList.remove("hidden");
+	// Does the target have extra help?
+	if ( !e.target.hasAttribute('title') || !e.target.hasAttribute('id')){
+		return;
 	}
+	// Does the display already contain the right information?
+	if (info.dataset.titleOf == e.target.id){
+		info.classList.toggle('hidden');
+		return;
+	}
+	// Need new help to be displayed.
+	// Remove the info display's current contents
+	let infoTextHolder = info.getElementsByTagName('main')[0];
+	while (infoTextHolder.lastChild) {
+		infoTextHolder.removeChild(infoTextHolder.lastChild);
+	}
+	
+	// Add the target's title text to the info display
+	let paragraphs = e.target.getAttribute('title').split('\n');
+	for (var i = 0; i < paragraphs.length; i++){
+		let text = paragraphs[i].trim();
+		if (text.length == 0){
+			continue;
+		}
+		let para = document.createElement("p");
+		para.appendChild(document.createTextNode(text));
+		infoTextHolder.appendChild(para);
+	}
+	
+	renderMathInElement(infoTextHolder, {
+		delimiters: [ {
+			left: "$",
+			right: "$",
+			display: false
+		} ]
+	});
+	
+	// Record which element we're showing the information for
+	info.dataset.titleOf = e.target.id;
+	info.classList.remove("hidden");
 }
 
 function closeInfoBox(e){
