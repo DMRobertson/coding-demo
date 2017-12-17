@@ -1,59 +1,61 @@
-rep2x = {
-	
-};
+const codes = {
+	"rep2x": {
+		encode: (x) => (x << 8) + x,
+	}
+}
 
-function randomErrorPattern(rate){
+function randomErrorPattern(rate, bitlength){
 	let pattern = 0;
-	let errors = 0;
 	let mask = 1;
-	for (let i = 0; i < 8; i++){
+	for (let i = 0; i < bitlength; i++){
 		if (Math.random() < rate){
-			errors++;
 			pattern ^= mask;
 		}
 		mask <<= 1;
 	}
-	return {
-		bitErrors: errors,
-		pattern: pattern
-	};
+	return pattern;
 }
 
-function simulateNoise(raw, start, end, settings) {
-	console.log(settings);
-	let bitErrors = 0;
-	let byteErrors = 0;
+function simulateNoiseRawImage(raw, start, end, rate) {
+	let pixelErrors = 0;
+	// Message units are 24bit pixel strings, embedded as 32 bit strings rgba in this array
 	for (let index = start; index < end; index += 4){
-		// ignore alpha channel
+		let pixelError = 0;
+		// We ignore the alpha channel a
 		for (let j = 0; j < 3; j++) {
-			let result = randomErrorPattern(settings.bitErrorRate);
-			bitErrors += result.bitErrors;
-			byteErrors += (result.bitErrors !== 0);
-			raw[index + j] ^= result.pattern;
+			let pattern = randomErrorPattern(rate, 8);
+			pixelError |= (pattern !== 0);
+			raw[index + j] ^= pattern;
+		}
+		pixelErrors += pixelError;
+	}
+	return pixelErrors;
+}
+
+function encode(raw, rawStart, rawEnd, encoded, encodedStart, encodedEnd, settings){
+	let rawIndex = rawStart;
+	let code = codes[settings.code];
+	let encodedIndex = encodedStart;
+	if (settings.unitsPerPixel == 3){
+		while (rawIndex < rawEnd){
+			for (let j = 0; j < 3; j++) {
+				encoded[encodedIndex + j] = code.encode(raw[rawIndex + j])
+			}
+			rawIndex += 4;
+			encodedIndex += 3;
 		}
 	}
-	return {
-		bitErrors: bitErrors,
-		byteErrors: byteErrors
-	};
 }
 
 onmessage = function(e){
-	let d = e.data;
-	let settings = d.settings;
+	// payload
+	let p = e.data;
+	let settings = p.settings;
 	let response = {
-		action: d.action,
-		workerId: d.workerId,
+		workerId: p.workerId,
 	};
-	switch (d.action){
-		case "simulateNoise":
-			let result = simulateNoise(d.raw, d.start, d.end, settings);
-			Object.assign(response, result);
-			response.bytesSent = 3 * (d.end - d.start) / 4;
-			response.bitsSent = response.bytesSent * 8;
-			postMessage(response);
-			break;
-		default:
-			break;
-	}
+	encode(p.raw, p.rawStart, p.rawEnd, p.encoded, p.encodedStart, p.encodedEnd, settings);
+	let pixelErrors = simulateNoiseRawImage(p.raw, p.rawStart, p.rawEnd, settings.bitErrorRate);
+	response.pixelErrors = pixelErrors;
+	postMessage(response);
 }

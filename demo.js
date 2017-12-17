@@ -1,6 +1,11 @@
 "use strict"
 
 class WorkerPool {
+	/* No idea what I'm doing here.
+	The intention was to make a system such that the workers only handle the most recent computation request.
+	Then the user can can spam the slider without the workers recomputing at each different error rates
+	Hopefully the demo seems faster that way.
+	*/
 	constructor(){
 		this.workers = new Array(4);
 		let handler = this.onCompletion.bind(this);
@@ -19,9 +24,16 @@ class WorkerPool {
 		this.completedRequests = 0;
 	}
 	
-	requestComputation(payload, callback){
+	requestComputation(payloadFactory, callback){
+		/* This is the only way that the outside world is supposed to talk to the workers.
+		A request consists of a payloadFactory function and a callback function, with signatures
+			payloadFactory(workerIndex) -> object
+			callback(results)
+		The payloadFactory is given a workerId (0, 1, 2, 3) and should create an object (the payload) which is sent to the worker via postMessage.
+		Each worker sends an object back in return with postMessage; these are gathered together in an array (results) and fed to the callback.
+		*/
 		this.numRequests += 1;
-		this.request = [payload, callback];
+		this.request = [payloadFactory, callback];
 		this.considerComputation();
 	}
 	
@@ -35,6 +47,7 @@ class WorkerPool {
 		this.computing = true;
 		this.completed = 0;
 		
+		// Allow another request to be queued
 		let payloadFactory = this.request[0];
 		this.callback = this.request[1];
 		this.request = null;
@@ -60,35 +73,6 @@ class WorkerPool {
 				instance.considerComputation();
 			});
 		}
-	}
-	
-	simulateNoise(raw, callback){
-		let settings = getSettings();
-		let blockSize = raw.byteLength / 4;
-		// TODO: does this break if the number of pixels isn't a multiple of 4?
-		let payload = i => ({
-			action: "simulateNoise",
-			raw: raw,
-			start: i * blockSize,
-			end: (i+1) * blockSize,
-			settings: settings
-		});
-		const assembleResults = function(results){
-			let output = {
-				bitErrors: 0,
-				byteErrors: 0,
-				bitsSent: 0,
-				bytesSent: 0,
-			};
-			for (let i = 0; i < 4; i++){
-				output.bitErrors += results[i].bitErrors;
-				output.byteErrors += results[i].byteErrors;
-				output.bitsSent += results[i].bitsSent;
-				output.bytesSent += results[i].bytesSent;
-			}
-			callback(output);
-		}
-		this.requestComputation(payload, assembleResults);
 	}
 }
 
@@ -177,41 +161,104 @@ function imageLoaded(e){
 	let sentCtx = sent.getContext('2d', {alpha: false});
 	sentCtx.drawImage(this, 0, 0, width, height);
 	
-	applyNoise();
+	modelTransmission();
 }
 
-function applyNoise(){
+function modelTransmission(){
 	let sent = document.getElementById("sent");
 	if ( sent.height === 0 || sent.width === 0){
 		return;
 	}
+	let settings = getSettings();
 	let sentCtx = sent.getContext('2d', {alpha: false});
-	
 	let imageData = sentCtx.getImageData(0, 0, sent.width, sent.height);
-	let buffer = new SharedArrayBuffer(sent.width * sent.height * 4);
-	let raw = new Uint8ClampedArray(buffer);
+	let numPixels = sent.width * sent.height;
+
+	// Create an array of Alice's data. Every 4th byte belongs to the alpha channel (ignored).
+	// The workers will randomly mutate this and set the result to be the image after tranmission without a code.
+	let raw = getUintArray(1, numPixels * 4);
 	raw.set(imageData.data);
+	/* Divide up the array into 4 blocks, approximately the same length. Each must have length a multiple of 4, or else we could have a situation where one block ends in the middle of describing a pixel (e.g. rg|ba). For example, if I have 9 pixels described by 36 bytes, the natural length for each block is 9 bytes. But the first block would read "rgbargbar", which is bad, so we round the block size down to the nearest multiple of 4, namely 8. Block sizes in bytes are then [8, 8, 8, 12].  */
+	let rawBlockSize = 4 * Math.floor(numPixels / 4);
+	let rawBlockIndices = [0, rawBlockSize, 2*rawBlockSize, 3*rawBlockSize, raw.length];
+	// Provide space for the encoded message
+	let encoded = getUintArray(settings.encodedUnitBytes, numPixels * settings.unitsPerPixel);
+	/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
+	let encodedBlockIdealSize = numPixels * settings.unitsPerPixel / 4;
+	let encodedBlockSize = 3 * Math.floor(encodedBlockIdealSize / 3);
+	let encodedBlockIndices = [0, encodedBlockSize, 2*encodedBlockSize, 3*encodedBlockSize, encoded.length];
+	// Explain how to prepare information for the ith worker
+	function payloadFactory(i){
+		return {
+			raw: raw,
+			rawStart: rawBlockIndices[i],
+			rawEnd: rawBlockIndices[i+1],
+			encoded: encoded,
+			encodedStart: encodedBlockIndices[i],
+			encodedEnd: encodedBlockIndices[i+1],
+			settings: settings
+		}
+	}
 	
-	workers.simulateNoise(raw, function(result){
+	function whenWorkersDone(results){
+		let output = assembleResults(results);
+		// raw transmitted verbatim through the channel and now has errors applied
 		imageData.data.set(raw);
 		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
 		receivedCtx.putImageData(imageData, 0, 0);
-		let byteRateDisplay = document.getElementById('error_rate_byte');
-		byteRateDisplay.innerText = (result.byteErrors/result.bytesSent * 100).toFixed(1) + '%';
-	});
+		let pixelErrorRateDisplay = document.getElementById('error_rate_naive');
+		pixelErrorRateDisplay.innerText = (output.pixelErrors/numPixels * 100).toFixed(1) + '%';
+	}
+	workers.requestComputation(payloadFactory, whenWorkersDone);
 }
 
+function getUintArray(bytesPerUnit, unitCount){
+	const arrayViewType = {
+		1: Uint8Array,
+		2: Uint16Array,
+	}
+	let specificType = arrayViewType[bytesPerUnit];
+	let buffer = new SharedArrayBuffer(specificType.BYTES_PER_ELEMENT * unitCount)
+	let view = new specificType(buffer);
+	return view;
+}
+
+function assembleResults (results){
+	const keys = ["pixelErrors"];
+	let output = {};
+	for (let i = 0; i < keys.length; i++){
+		let key = keys[i];
+		output[key] = 0;
+		for (let j = 0; j < 4; j++){
+			output[key] += results[j][key];
+		}
+	}
+	return output;
+}
+
+const settingsTemplate = {
+	"rep2x" : {
+		minimumDistance: 2,
+		unitsPerPixel: 3,
+		messageUnitBytes: 1,
+		encodedUnitBytes: 2,
+	}
+};
+
 function getSettings(){
-	return {
+	let code = document.getElementById("code").value;
+	let settings = {
 		bitErrorRate: document.getElementById("error_probability").valueAsNumber,
-		code: document.getElementById("code").value,
+		code: code,
 	};
+	Object.assign(settings, settingsTemplate[code]);
+	return settings;
 }
 
 function errorProbabilityMoved(){
 	let percentage = (this.value * 100).toFixed(1);
 	document.querySelector("output[for='" + this.id + "']").innerText = percentage + "%";
-	applyNoise();
+	modelTransmission();
 }
 
 // global state

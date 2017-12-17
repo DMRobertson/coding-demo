@@ -1,3 +1,5 @@
+/* Main page setup */
+
 body {
 	font-family: sans-serif;
 	padding: 2px;
@@ -51,6 +53,12 @@ canvas {
 	object-fit: contain;
 }
 
+footer {
+	display: flex;
+	flex-shrink: 0;
+}
+
+/* #Alice can be clicked to upload a file */
 #Alice {
 	cursor: pointer;
 }
@@ -68,28 +76,9 @@ canvas {
 
 #get_image { display: none; }
 
-footer {
-	display: flex;
-	flex-shrink: 0;
-}
-
-footer h2 {
-	flex-basis: 100%;
-}
-
+/* The footer contains settings and statistics */
 footer fieldset {
-	width: 32%;
-	box-sizing: border-box;
 	border: 0;
-}
-
-footer fieldset label {
-	display: block;
-}
-
-output[for="error_probability"] {
-	width: 3.5em;
-	text-align: right;
 }
 
 #error_probability {
@@ -133,15 +122,18 @@ output[for="error_probability"] {
 
 [id][title] {
 	cursor: help;
-	text-decoration: dotted underline;
+	text-decoration: underline;
 	text-decoration-skip: inherit;
 }
 
 [id][title]:hover {
-	color: #ff0000;
 	text-shadow: 0 0 1ex rgba(0, 0, 0, 0.4);
 }
 
 .hidden {
 	opacity: 0;
+}
+
+output {
+	text-decoration: none !important;
 }

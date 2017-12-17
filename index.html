@@ -34,7 +34,7 @@
 			<h3 id="BSC" title="A binary symmetric channel (BSC) is a simple model of a communications channel. The BSC can transmit only two symbols, conventionally chosen to be 0 and 1. Whenever the sender (Alice) sends $n$ symbols in a row, the receiver (Bob) gets $n$ symbols back.
 			
 			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant $0 \leq p \leq 1$, though we usually assume $p < 1/2$. We further assume that error probabilities for different symbols are independent.">Binary symmetric channel</h3>
-			<label for="error_probability">Bit error rate: <output for="error_probability"></output></label>
+			<label for="error_probability" id="error_probability_label" title="The value of $p$ in the definition of the binary symmetric channel.">Bit error rate:</label> <output for="error_probability"></output><br />
 			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
 			<datalist id="tickmarks">
 				<!--option value="0" label="0%" -->
@@ -56,22 +56,26 @@
 				</select>
 			</label>
 		
-			<label for="message_units" id="message_units_label" title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as en eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so our message units belong to ${\mathbb{Z}_2}^{24}$.">Message units:
+			<label for="message_units" id="message_units_label" title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as an eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so at first thought we may as well assume our message units belong to ${\mathbb{Z}_2}^{24}$.
+			
+			However, we don't want to restrict ourselves to only use codes with dimension $24$. To get around this, let $k$ be a divisor of $24$. We chop a 24-bit pixel string into $r = 24/k$ pieces of length $k$; then we transmit each piece using an $[n, k]$-code. Bob receives $r$ strings of length $n$, which decode to $r$ strings of length $k$. Assembling these last strings together, Bob recieves a length $rk = 24$ string.">Message units:</label>
 				<output id="message_units">
 					<span id="dim_4">Separate half-colors $r = r_0 r_1 \in ({\mathbb{Z}_2}^4)^2$</span>
 					<span id="dim_8">Separate colors $r, g, b \in {\mathbb{Z}_2}^8$</span>
 					<span id="dim_12">Single half-string $s = s_0 s_1 \in ({\mathbb{Z}_2}^12)^2$</span>
 					<span id="dim_24">Single string $s = rgb \in {\mathbb{Z}_2}^{24}$</span>
 				</output>
-			</label>
-		
+			</label><br />
 			<label for="information_rate">Information rate: <output id="information_rate"></output></label>
 		</fieldset>
 		<fieldset id="simulation_stats">
-			<h3>Transmission statistics</h3>
-			<label for="error_rate_byte">Byte error rate: <output id="error_rate_byte"></output></label>
+			<h3>Transmission statistics </h3>
+			<label id="error_rate_naive_label" for="error_rate_naive" title="If we just transmitted each pixel as an element of ${\mathbb{Z}_2}^{24}$ without using a code, what proportion of pixels incur an error during transmission?">Naive error rate (pixels):</label> <output id="error_rate_naive"></output></label><br />
+			<!--
+			<label for="error_rate_coded">Encoded error rate: <output id="error_rate_coded"></output></label>
 			<label for="error_detection_rate">Error detection rate: <output id="error_detection_rate"></output></label>
 			<label for="correct_correction_rate">Correct corrections: <output id="correct_correction_rate"></output></label>
+			-->
 		</fieldset>
 	</footer>
 	<aside id="info" class="hidden">
