@@ -18,6 +18,11 @@ body {
 	justify-items: stretch;
 }
 
+.mid_drag {
+	border-color: red;
+	background: #fff4f4;
+}
+
 main {
 	flex-grow: 1;
 	flex-shrink: 1;
@@ -59,22 +64,30 @@ footer {
 }
 
 /* #Alice can be clicked to upload a file */
-#Alice {
-	cursor: pointer;
-}
-
-.mid_drag {
-	border-color: red;
-	background: #fff4f4;
-}
-
 #Alice:hover {
+	cursor: pointer;
 	color: red;
 	border-color: red;
 	background: #fff0f0;
 }
 
 #get_image { display: none; }
+
+/* The third display section has two canvases, toggled on hover */
+
+#Bob_decoded:hover {
+	color: blue;
+	border-color: blue;
+	background: #f0f0ff;
+}
+
+#Bob_decoded #difference, #Bob_decoded #difference_caption, #Bob_decoded:hover #decoded, #Bob_decoded:hover #decoded_caption {
+	display: none;
+}
+
+#Bob_decoded:hover #difference, #Bob_decoded:hover #difference_caption {
+	display: block;
+}
 
 /* The footer contains settings and statistics */
 footer fieldset {
@@ -106,32 +119,38 @@ footer fieldset {
 	transition: opacity 0.15s;
 }
 
+.hidden {
+	opacity: 0;
+}
+
 #info aside {
 	align-self: center;
 	font-size: 4ex;
 	margin: 12px;
 }
 
-#info main {
-	overflow: auto;
-}
-
 .emoji {
 	font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
 
+#info main {
+	overflow: auto;
+}
+
+#close {
+	margin-left: 6px;
+}
+
+/* Tooltip sources */
+
 [id][title] {
 	cursor: help;
 	text-decoration: underline;
-	text-decoration-skip: inherit;
+	text-decoration-skip: ink;
 }
 
 [id][title]:hover {
 	text-shadow: 0 0 1ex rgba(0, 0, 0, 0.4);
-}
-
-.hidden {
-	opacity: 0;
 }
 
 output {

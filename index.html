@@ -11,9 +11,9 @@
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script>
 </head>
 <body>
-	<header>
+	<!--header>
 		<h1>Coding theory demo</h1>
-	</header>
+	</header-->
 	<main>
 		<label id="Alice" for="get_image">
 			<canvas id="sent" width="0" height="0"></canvas>
@@ -21,12 +21,16 @@
 			<p><strong>Choose a file</strong> or drag it to the page.</p>
 		</label>
 		<section id="Bob">
-			<canvas id="received"></canvas>
+			<canvas id="naive_transmission"></canvas>
 			<p>Transmission without a code</p>
 		</section>
-		<section id="Bob_decoded">
-			<canvas id="computed"></canvas>
-			<p>Image after correction using code</p>
+		<section id="Bob_decoded" title="This displays the result of transmitting the image using the code.
+		
+		Hover over to see the difference between transmission with and without using a code. Black indicates no difference: bright colours indicate a large difference.">
+			<canvas id="decoded"></canvas>
+			<canvas id="difference"></canvas>
+			<p id="decoded_caption">Image after correction using code</p>
+			<p id="difference_caption">Uncoded versus coded transmission</p>
 		</section>
 	</main>
 	<footer>
@@ -48,13 +52,14 @@
 			<h3>Code</h3>
 			<label for="code">Code:
 				<select id="code">
-					<option data-dimension="8"  label="[16, 8]-repetition"         value="rep2x"   >
-					<option data-dimension="8"  label="[24, 8]-repetition"         value="rep3x"   >
-					<option data-dimension="4"  label="Hamming [7,4]"              value="Ham(3)"  >
-					<option data-dimension="12" label="Extended Hamming [8,4]"     value="Ham+(3)" >
-					<option data-dimension="24" label="Single check-digit [25,24]" value="check1"  >
+					<option label="[16, 8]-repetition"         value="rep2x"   >
+					<option label="None"                       value="none"    >
+					<!--option label="[24, 8]-repetition"         value="rep3x"   >
+					<option label="Hamming [7,4]"              value="Ham(3)"  >
+					<option label="Extended Hamming [8,4]"     value="Ham+(3)" >
+					<option label="Single check-digit [25,24]" value="check1"  -->
 				</select>
-			</label>
+			</label><br />
 		
 			<label for="message_units" id="message_units_label" title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as an eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so at first thought we may as well assume our message units belong to ${\mathbb{Z}_2}^{24}$.
 			
@@ -70,12 +75,21 @@
 		</fieldset>
 		<fieldset id="simulation_stats">
 			<h3>Transmission statistics </h3>
-			<label id="error_rate_naive_label" for="error_rate_naive" title="If we just transmitted each pixel as an element of ${\mathbb{Z}_2}^{24}$ without using a code, what proportion of pixels incur an error during transmission?">Naive error rate (pixels):</label> <output id="error_rate_naive"></output></label><br />
-			<!--
-			<label for="error_rate_coded">Encoded error rate: <output id="error_rate_coded"></output></label>
-			<label for="error_detection_rate">Error detection rate: <output id="error_detection_rate"></output></label>
-			<label for="correct_correction_rate">Correct corrections: <output id="correct_correction_rate"></output></label>
-			-->
+			<label id="error_rate_naive_label" for="error_rate_naive" title="If we just transmitted each pixel as an element of ${\mathbb{Z}_2}^{24}$ without using a code, what proportion of pixels incur an error during transmission?
+
+			Each bit independently incurs an error with probability $p$, so the total number of errors $X$ in a 24-bit pixel string has a $\operatorname{Bin}(24, p)$ distribution. We get a pixel error whenever $X > 0$, which occurs with probability $1 - \Pr(X = 0) = 1 - (1-p)^{24}$.">Uncoded pixel error rate:</label> <output id="error_rate_naive"></output></label><br />
+			
+			<label id="error_rate_units_label" for="error_rate_units" title="After encoding and transmitting, what proportion of message units incur an error? Note that a pixel may be described by multiple message units.
+
+			Similarly to the pixel error rate, if our encoded message units have length $n$ then we have a unit error rate of $1 - (1-p)^n$.">Encoded unit error rate:</label> <output id="error_rate_units"></output><br />
+			
+			<label id="error_detection_rate_label" for="error_detection_rate" title="If Alice's unit encodes as $a$ and is received in error as $b \neq a$, we detect the error if and only if $b$ is not a codeword.
+
+			Of the errors that occur to encoded message units, how many of them did the code detect?">Error detection rate:</label> <output id="error_detection_rate"></output><br />
+			
+			<label id="correct_correction_rate_label" for="correct_correction_rate" title="Of the errors we detected, how many of our attempts to correct recovered the original codeword?">Correct corrections:</label> <output id="correct_correction_rate"></output><br />
+
+			<label id="error_rate_coded_label" for="error_rate_coded" title="Using the code, how many pixels were incorrectly transmitted?">Coded pixel error rate:</label> <output id="error_rate_coded"></output></label>
 		</fieldset>
 	</footer>
 	<aside id="info" class="hidden">

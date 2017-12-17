@@ -181,41 +181,91 @@ function modelTransmission(){
 	/* Divide up the array into 4 blocks, approximately the same length. Each must have length a multiple of 4, or else we could have a situation where one block ends in the middle of describing a pixel (e.g. rg|ba). For example, if I have 9 pixels described by 36 bytes, the natural length for each block is 9 bytes. But the first block would read "rgbargbar", which is bad, so we round the block size down to the nearest multiple of 4, namely 8. Block sizes in bytes are then [8, 8, 8, 12].  */
 	let rawBlockSize = 4 * Math.floor(numPixels / 4);
 	let rawBlockIndices = [0, rawBlockSize, 2*rawBlockSize, 3*rawBlockSize, raw.length];
-	// Provide space for the encoded message
-	let encoded = getUintArray(settings.encodedUnitBytes, numPixels * settings.unitsPerPixel);
-	/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
-	let encodedBlockIdealSize = numPixels * settings.unitsPerPixel / 4;
-	let encodedBlockSize = 3 * Math.floor(encodedBlockIdealSize / 3);
-	let encodedBlockIndices = [0, encodedBlockSize, 2*encodedBlockSize, 3*encodedBlockSize, encoded.length];
+	
 	// Explain how to prepare information for the ith worker
-	function payloadFactory(i){
+	function rawPayloadFactory(i){
 		return {
 			raw: raw,
 			rawStart: rawBlockIndices[i],
 			rawEnd: rawBlockIndices[i+1],
-			encoded: encoded,
-			encodedStart: encodedBlockIndices[i],
-			encodedEnd: encodedBlockIndices[i+1],
 			settings: settings
+		};
+	}
+	let payloadFactory, numUnits, decoded, diff;
+	if (settings.codeName !== "none"){
+		// Provide space for the encoded message
+		let encoded = getUintArray(settings.encodedUnitBytes, numPixels * settings.unitsPerPixel);
+		/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
+		numUnits = numPixels * settings.unitsPerPixel;
+		let encodedBlockIdealSize = numUnits / 4;
+		let encodedBlockSize = 3 * Math.floor(encodedBlockIdealSize / 3);
+		let encodedBlockIndices = [0, encodedBlockSize, 2*encodedBlockSize, 3*encodedBlockSize, encoded.length];
+		
+		// Provide space for the corrected image and the computed difference
+		decoded = getUintArray(1, numPixels * 4);
+		diff = getUintArray(1, numPixels * 4);
+		
+		payloadFactory = function (i){
+			let payload = rawPayloadFactory(i);
+			Object.assign(payload, {
+				encoded: encoded,
+				decoded: decoded,
+				diff: diff,
+				encodedStart: encodedBlockIndices[i],
+				encodedEnd: encodedBlockIndices[i+1],
+			});
+			return payload;
 		}
+	} else {
+		payloadFactory = rawPayloadFactory;
 	}
 	
 	function whenWorkersDone(results){
 		let output = assembleResults(results);
 		// raw transmitted verbatim through the channel and now has errors applied
 		imageData.data.set(raw);
-		let receivedCtx = document.getElementById('received').getContext('2d', {alpha: false});
+		let receivedCtx = document.getElementById('naive_transmission').getContext('2d', {alpha: false});
 		receivedCtx.putImageData(imageData, 0, 0);
-		let pixelErrorRateDisplay = document.getElementById('error_rate_naive');
-		pixelErrorRateDisplay.innerText = (output.pixelErrors/numPixels * 100).toFixed(1) + '%';
+		
+		let pixelNaiveErrorRateDisplay = document.getElementById('error_rate_naive');
+		let unitErrorRateDisplay = document.getElementById('error_rate_units');
+		let errorDetectionRateDisplay = document.getElementById('error_detection_rate');
+		let correctCorrectionRateDisplay = document.getElementById('correct_correction_rate');
+		let pixelCodedErrorRateDisplay = document.getElementById('error_rate_coded');
+		
+		pixelNaiveErrorRateDisplay.innerText = formatProportion(output.uncodedPixelErrors, numPixels);
+		if (settings.codeName === "none"){
+			unitErrorRateDisplay.innerText = "";
+			errorDetectionRateDisplay.innerText = "";
+			correctCorrectionRateDisplay.innerText = "";
+		} else {
+			unitErrorRateDisplay.innerText = formatProportion(output.unitErrors, numUnits);
+			errorDetectionRateDisplay.innerText = formatProportion(output.detectedErrors, output.unitErrors);
+			correctCorrectionRateDisplay.innerText = formatProportion(output.correctCorrections, output.detectedErrors);
+			pixelCodedErrorRateDisplay.innerText = formatProportion(output.codedPixelErrors, numPixels);
+			
+			imageData.data.set(decoded);
+			let decodedCtx = document.getElementById('decoded').getContext('2d', {alpha: false});
+			decodedCtx.putImageData(imageData, 0, 0);
+			
+			imageData.data.set(diff);
+			let differenceCtx = document.getElementById('difference').getContext('2d', {alpha: false});
+			differenceCtx.putImageData(imageData, 0, 0);
+		}
 	}
 	workers.requestComputation(payloadFactory, whenWorkersDone);
+}
+
+function formatProportion(num, den, precision){
+	precision = precision || 1;
+	return (num / den * 100).toFixed(precision) + '%';
 }
 
 function getUintArray(bytesPerUnit, unitCount){
 	const arrayViewType = {
 		1: Uint8Array,
 		2: Uint16Array,
+		4: Uint32Array,
 	}
 	let specificType = arrayViewType[bytesPerUnit];
 	let buffer = new SharedArrayBuffer(specificType.BYTES_PER_ELEMENT * unitCount)
@@ -224,10 +274,10 @@ function getUintArray(bytesPerUnit, unitCount){
 }
 
 function assembleResults (results){
-	const keys = ["pixelErrors"];
+	const keysToSum = ["uncodedPixelErrors", "unitErrors", "detectedErrors", "correctCorrections", "codedPixelErrors"];
 	let output = {};
-	for (let i = 0; i < keys.length; i++){
-		let key = keys[i];
+	for (let i = 0; i < keysToSum.length; i++){
+		let key = keysToSum[i];
 		output[key] = 0;
 		for (let j = 0; j < 4; j++){
 			output[key] += results[j][key];
@@ -237,6 +287,9 @@ function assembleResults (results){
 }
 
 const settingsTemplate = {
+	"none" : {
+		minimumDistance: 1,
+	},
 	"rep2x" : {
 		minimumDistance: 2,
 		unitsPerPixel: 3,
@@ -246,18 +299,17 @@ const settingsTemplate = {
 };
 
 function getSettings(){
-	let code = document.getElementById("code").value;
+	let codeName = document.getElementById("code").value;
 	let settings = {
 		bitErrorRate: document.getElementById("error_probability").valueAsNumber,
-		code: code,
+		codeName: codeName,
 	};
-	Object.assign(settings, settingsTemplate[code]);
+	Object.assign(settings, settingsTemplate[codeName]);
 	return settings;
 }
 
 function errorProbabilityMoved(){
-	let percentage = (this.value * 100).toFixed(1);
-	document.querySelector("output[for='" + this.id + "']").innerText = percentage + "%";
+	document.querySelector("output[for='" + this.id + "']").innerText = formatProportion(this.valueAsNumber, 1, 2);
 	modelTransmission();
 }
 
@@ -265,12 +317,19 @@ function errorProbabilityMoved(){
 var workers = new WorkerPool();
 
 function checkForHelp(e){
-	// Does the target have extra help?
-	if ( !e.target.hasAttribute('title') || !e.target.hasAttribute('id')){
+	// Does the target, or any of its ancestors have extra help?
+	let infoSource = e.target;
+	while (infoSource){
+		if ( infoSource.hasAttribute('title') && infoSource.hasAttribute('id')){
+			break;
+		}
+		infoSource = infoSource.parentElement;
+	}
+	if (infoSource === null){
 		return;
 	}
 	// Does the display already contain the right information?
-	if (info.dataset.titleOf == e.target.id){
+	if (info.dataset.titleOf == infoSource.id){
 		info.classList.toggle('hidden');
 		return;
 	}
@@ -282,7 +341,7 @@ function checkForHelp(e){
 	}
 	
 	// Add the target's title text to the info display
-	let paragraphs = e.target.getAttribute('title').split('\n');
+	let paragraphs = infoSource.getAttribute('title').split('\n');
 	for (var i = 0; i < paragraphs.length; i++){
 		let text = paragraphs[i].trim();
 		if (text.length == 0){
@@ -302,7 +361,7 @@ function checkForHelp(e){
 	});
 	
 	// Record which element we're showing the information for
-	info.dataset.titleOf = e.target.id;
+	info.dataset.titleOf = infoSource.id;
 	info.classList.remove("hidden");
 }
 
