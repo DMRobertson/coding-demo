@@ -178,80 +178,69 @@ function modelTransmission(){
 	// The workers will randomly mutate this and set the result to be the image after tranmission without a code.
 	let raw = getUintArray(1, numPixels * 4);
 	raw.set(imageData.data);
-	/* Divide up the array into 4 blocks, approximately the same length. Each must have length a multiple of 4, or else we could have a situation where one block ends in the middle of describing a pixel (e.g. rg|ba). For example, if I have 9 pixels described by 36 bytes, the natural length for each block is 9 bytes. But the first block would read "rgbargbar", which is bad, so we round the block size down to the nearest multiple of 4, namely 8. Block sizes in bytes are then [8, 8, 8, 12].  */
+	// After modelling transmission, this will be decoded into an array of the same type and size.
+	// We use a third array to compute their difference.
+	let decoded = getUintArray(1, numPixels * 4);
+	let diff = getUintArray(1, numPixels * 4);
+	/* Divide up these arrays into 4 blocks, approximately the same length. Each must have length a multiple of 4, or else we could have a situation where one block ends in the middle of describing a pixel (e.g. rg|ba). For example, if I have 9 pixels described by 36 bytes, the natural length for each block is 9 bytes. But the first block would read "rgbargbar", which is bad, so we round the block size down to the nearest multiple of 4, namely 8. Block sizes in bytes are then [8, 8, 8, 12].  */
 	let rawBlockSize = 4 * Math.floor(numPixels / 4);
 	let rawBlockIndices = [0, rawBlockSize, 2*rawBlockSize, 3*rawBlockSize, raw.length];
 	
+	// Provide space for the encoded message
+	let unitsPerPixel = {
+		"nibble": 6,
+		"byte": 3,
+		"triple": 1
+	}[settings.messageUnit];
+	let encoded = getUintArray(settings.encodedUnitBytes, numPixels * unitsPerPixel);
+	/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
+	let numUnits = numPixels * unitsPerPixel;
+	let encodedBlockIdealSize = numUnits / 4;
+	let encodedBlockSize = unitsPerPixel * Math.floor(encodedBlockIdealSize / unitsPerPixel);
+	let encodedBlockIndices = [0, encodedBlockSize, 2*encodedBlockSize, 3*encodedBlockSize, encoded.length];
+
 	// Explain how to prepare information for the ith worker
-	function rawPayloadFactory(i){
+	function payloadFactory(i){
 		return {
 			raw: raw,
+			decoded: decoded,
+			diff: diff,
 			rawStart: rawBlockIndices[i],
 			rawEnd: rawBlockIndices[i+1],
+			encoded: encoded,
+			encodedStart: encodedBlockIndices[i],
+			encodedEnd: encodedBlockIndices[i+1],
 			settings: settings
 		};
-	}
-	let payloadFactory, numUnits, decoded, diff;
-	if (settings.codeName !== "none"){
-		// Provide space for the encoded message
-		let encoded = getUintArray(settings.encodedUnitBytes, numPixels * settings.unitsPerPixel);
-		/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
-		numUnits = numPixels * settings.unitsPerPixel;
-		let encodedBlockIdealSize = numUnits / 4;
-		let encodedBlockSize = 3 * Math.floor(encodedBlockIdealSize / 3);
-		let encodedBlockIndices = [0, encodedBlockSize, 2*encodedBlockSize, 3*encodedBlockSize, encoded.length];
-		
-		// Provide space for the corrected image and the computed difference
-		decoded = getUintArray(1, numPixels * 4);
-		diff = getUintArray(1, numPixels * 4);
-		
-		payloadFactory = function (i){
-			let payload = rawPayloadFactory(i);
-			Object.assign(payload, {
-				encoded: encoded,
-				decoded: decoded,
-				diff: diff,
-				encodedStart: encodedBlockIndices[i],
-				encodedEnd: encodedBlockIndices[i+1],
-			});
-			return payload;
-		}
-	} else {
-		payloadFactory = rawPayloadFactory;
 	}
 	
 	function whenWorkersDone(results){
 		let output = assembleResults(results);
 		// raw transmitted verbatim through the channel and now has errors applied
-		imageData.data.set(raw);
-		let receivedCtx = document.getElementById('naive_transmission').getContext('2d', {alpha: false});
-		receivedCtx.putImageData(imageData, 0, 0);
+		const loopData = [
+			[ raw, "naive_transmission" ],
+			[ decoded, "decoded" ],
+			[ diff, "difference" ],
+		];
+		for (let i = 0; i < loopData.length; i++){
+			let view = loopData[i][0];
+			let id = loopData[i][1];
+			imageData.data.set(view);
+			let ctx = document.getElementById(id).getContext('2d', {alpha: false});
+			ctx.putImageData(imageData, 0, 0);
+		}
 		
-		let pixelNaiveErrorRateDisplay = document.getElementById('error_rate_naive');
-		let unitErrorRateDisplay = document.getElementById('error_rate_units');
+		let encodedPixelErrorRateDisplay = document.getElementById('encoded_pixel_error_rate');
 		let errorDetectionRateDisplay = document.getElementById('error_detection_rate');
 		let correctCorrectionRateDisplay = document.getElementById('correct_correction_rate');
-		let pixelCodedErrorRateDisplay = document.getElementById('error_rate_coded');
+		let accuracyWithCodeDisplay = document.getElementById('accuracy_with_code');
+		let accuracyWithoutCodeDisplay = document.getElementById('accuracy_without_code');
 		
-		pixelNaiveErrorRateDisplay.innerText = formatProportion(output.uncodedPixelErrors, numPixels);
-		if (settings.codeName === "none"){
-			unitErrorRateDisplay.innerText = "";
-			errorDetectionRateDisplay.innerText = "";
-			correctCorrectionRateDisplay.innerText = "";
-		} else {
-			unitErrorRateDisplay.innerText = formatProportion(output.unitErrors, numUnits);
-			errorDetectionRateDisplay.innerText = formatProportion(output.detectedErrors, output.unitErrors);
-			correctCorrectionRateDisplay.innerText = formatProportion(output.correctCorrections, output.detectedErrors);
-			pixelCodedErrorRateDisplay.innerText = formatProportion(output.codedPixelErrors, numPixels);
-			
-			imageData.data.set(decoded);
-			let decodedCtx = document.getElementById('decoded').getContext('2d', {alpha: false});
-			decodedCtx.putImageData(imageData, 0, 0);
-			
-			imageData.data.set(diff);
-			let differenceCtx = document.getElementById('difference').getContext('2d', {alpha: false});
-			differenceCtx.putImageData(imageData, 0, 0);
-		}
+		encodedPixelErrorRateDisplay.innerText = formatProportion(output.encodedPixelErrors, numPixels);
+		errorDetectionRateDisplay.innerText = formatProportion(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
+		correctCorrectionRateDisplay.innerText = formatProportion(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
+		accuracyWithCodeDisplay.innerText = formatProportion(numPixels - output.decodedPixelErrors, numPixels);
+		accuracyWithoutCodeDisplay.innerText = formatProportion(numPixels - output.uncodedPixelErrors, numPixels);
 	}
 	workers.requestComputation(payloadFactory, whenWorkersDone);
 }
@@ -274,7 +263,7 @@ function getUintArray(bytesPerUnit, unitCount){
 }
 
 function assembleResults (results){
-	const keysToSum = ["uncodedPixelErrors", "unitErrors", "detectedErrors", "correctCorrections", "codedPixelErrors"];
+	const keysToSum = ["encodedPixelErrors", "encodedPixelErrorsDetected", "decodedPixelErrors", "encodedPixelErrorsCorrectlyCorrected", "uncodedPixelErrors"];
 	let output = {};
 	for (let i = 0; i < keysToSum.length; i++){
 		let key = keysToSum[i];
@@ -286,17 +275,50 @@ function assembleResults (results){
 	return output;
 }
 
-const settingsTemplate = {
+let settingsTemplate = {
+	// Pixels are described by three bytes r, g, b.
+	// The encoder can accept this a nibble at a time (6 total); a byte at a time (3 total); or three bytes at a time (1 total);
 	"none" : {
 		minimumDistance: 1,
+		messageUnit: "bytes",
+		encodedUnitBytes: 1,
 	},
 	"rep2x" : {
 		minimumDistance: 2,
-		unitsPerPixel: 3,
-		messageUnitBytes: 1,
-		encodedUnitBytes: 2,
+		messageUnit: "byte", // as opposed to "nibble" or "triple"
+		encodedUnitBytes: 2, // 1 2 or 4
+	},
+	"rep3x" : {
+		minimumDistance: 3,
+		messageUnit: "byte",
+		encodedUnitBytes: 4,
+	},
+	"rep4x" : {
+		minimumDistance: 4,
+		messageUnit: "byte",
+		encodedUnitBytes: 4,
+	},
+	"Ham(3)2x" : {
+		minimumDistance: "?",
+		messageUnit: "nibble",
+		encodedUnitBytes: 1
+	},
+	"Ham+(3)2x" : {
+		minimumDistance: "?",
+		messageUnit: "nibble",
+		encodedUnitBytes: 1
+	},
+	"Ham+(3)2x" : {
+		minimumDistance: "?",
+		messageUnit: "nibble",
+		encodedUnitBytes: 1
+	},
+	"check1" : {
+		minimumDistance: 1,
+		messageUnit: "triple",
+		encodedUnitBytes: 4
 	}
-};
+}
 
 function getSettings(){
 	let codeName = document.getElementById("code").value;
