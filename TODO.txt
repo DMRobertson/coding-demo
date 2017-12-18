@@ -1,2 +1,8 @@
 TODO (apart from make the thing work)
 	* Acknowledge David McKay's book (Garfield pictures) for the idea
+	* Don't compute the diff. Instead, on hover of middle and right canvases, show wrong pixels in white and right pixels in black. Maybe use the value of pixel to indicate the size of the error? (An option)
+	* Make image upscaling method an option
+	* Work out why big images fail miserably
+	* Do we need to count average bit errors? (Speed)
+	* Hide stuff with CSS that's not applicable to the full code ('none')
+	

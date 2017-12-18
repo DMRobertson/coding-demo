@@ -1,3 +1,5 @@
+"use strict";
+
 const LAST_BYTE = 0b11111111;
 
 const codes = {
@@ -24,6 +26,38 @@ const codes = {
 			}
 		},
 		decode: (w) => w & LAST_BYTE
+	},
+	"rep3x": {
+		encode: (x) => (x << 16) + (x << 8) + x,
+		isCodeword: function (w) {
+			let head = w >>> 16;
+			let mid = w >>> 8 & LAST_BYTE;
+			let tail = w & LAST_BYTE;
+			return head === mid && mid === tail;
+		},
+		correct: function(w) {
+			let head = w >>> 16;
+			let mid = w >>> 8 & LAST_BYTE;
+			let tail = w & LAST_BYTE;
+			/* Nearest codeword is one unit of Hamming distance away. Find an index where head, mid and tail do not all agree, with values h, m and t say. One digit will occur twice amongst these three bits; the other once. Set the bit in question of tail to be the value that occurs twice.*/
+			let mask = 1;
+			for (let i = 0; i < 8; i++){
+				let hbit = head & mask;
+				let mbit = mid  & mask;
+				let tbit = tail & mask;
+				if (hbit === mbit && mbit === tbit) {
+					mask <<= 1;
+					continue;
+				} else {
+					if (hbit === mbit){
+						// first two agree and are the winner; alter tail (inside w)
+						return w ^ mask;
+					}
+					// else: tail is the joint winner. Should change the loser, but since decoding already yields tail and that's already "correct", we won't bother.
+				}
+			}
+		},
+		decode: (w) => w & LAST_BYTE
 	}
 }
 
@@ -39,6 +73,15 @@ function randomErrorPattern(rate, bitlength){
 	return pattern;
 }
 
+function weight(error){
+	let errors = 0;
+	while (error){
+		errors += error & 1;
+		error >>>= 1;
+	}
+	return errors;
+}
+
 function simulateTransmission(p, settings){
 	let raw = p.raw;
 	let encoded = p.encoded;
@@ -46,15 +89,17 @@ function simulateTransmission(p, settings){
 	let diff = p.diff;
 	
 	let encodedPixelErrors = 0;
+	let encodedBitErrors = 0;
 	let encodedPixelErrorsDetected = 0;
 	let encodedPixelErrorsCorrectlyCorrected = 0;
 	let decodedPixelErrors = 0;
 	let uncodedPixelErrors = 0;
+	let uncodedBitErrors = 0;
 	
 	let rawIndex = p.rawStart;
 	let encodedIndex = p.encodedStart;
 	switch (settings.messageUnit){
-		case "bytes":
+		case "byte":
 			while (rawIndex < p.rawEnd){
 				let uncodedPixelError = false;
 				let encodedPixelError = false;
@@ -69,6 +114,7 @@ function simulateTransmission(p, settings){
 					// Channel applies noise
 					let encodedNoise = randomErrorPattern(settings.bitErrorRate, 8 * settings.encodedUnitBytes);
 					if (encodedNoise !== 0){
+						encodedBitErrors += weight(encodedNoise);
 						encodedPixelError = true;
 					}
 					let original = encoded[encodedIndex + j];
@@ -90,6 +136,7 @@ function simulateTransmission(p, settings){
 					// For the visualisation, we simulate noise and compute the diff
 					let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
 					if (rawNoise !== 0){
+						uncodedBitErrors += weight(rawNoise);
 						uncodedPixelError = true;
 					}
 					raw[rawIndex + j] ^= rawNoise;
@@ -97,7 +144,7 @@ function simulateTransmission(p, settings){
 				}
 				encodedPixelErrors += encodedPixelError;
 				encodedPixelErrorsDetected += encodedPixelErrorDetected;
-				encodedPixelErrorsCorrectlyCorrected += (encodedPixelError && encodedPixelErrorCorrectlyCorrected);
+				encodedPixelErrorsCorrectlyCorrected += (encodedPixelErrorDetected && encodedPixelErrorCorrectlyCorrected);
 				decodedPixelErrors += decodedPixelError;
 				uncodedPixelErrors += uncodedPixelError;
 				rawIndex += 4;
@@ -107,21 +154,19 @@ function simulateTransmission(p, settings){
 	}
 	return {
 		encodedPixelErrors: encodedPixelErrors,
+		encodedBitErrors: encodedBitErrors,
 		encodedPixelErrorsDetected: encodedPixelErrorsDetected,
 		encodedPixelErrorsCorrectlyCorrected: encodedPixelErrorsCorrectlyCorrected,
 		decodedPixelErrors: decodedPixelErrors,
 		uncodedPixelErrors: uncodedPixelErrors,
+		uncodedBitErrors: uncodedBitErrors,
 	};
 }
 
 onmessage = function(e){
-	// payload
-	let p = e.data;
+	let p = e.data; // payload
 	let settings = p.settings;
 	settings.code = codes[settings.codeName];
-	let response = {
-		workerId: p.workerId,
-	};
 	let results = simulateTransmission(p, settings);
 	results.workerId = p.workerId
 	postMessage(results);

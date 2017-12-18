@@ -56,6 +56,7 @@ canvas {
 	min-height: 0;
 	width: 100%;
 	object-fit: contain;
+	image-rendering: pixelated;
 }
 
 footer {
@@ -99,6 +100,11 @@ footer fieldset {
 }
 
 #message_units span {
+	display: none;
+}
+
+/* With no code, hide the correction output */
+body.no-code #Bob_decoded > * {
 	display: none;
 }
 
@@ -150,7 +156,7 @@ footer fieldset {
 }
 
 [id][title]:hover {
-	text-shadow: 0 0 1ex rgba(0, 0, 0, 0.4);
+	text-shadow: 0 0 1.5ex currentColor;
 }
 
 output {

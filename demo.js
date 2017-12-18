@@ -187,16 +187,11 @@ function modelTransmission(){
 	let rawBlockIndices = [0, rawBlockSize, 2*rawBlockSize, 3*rawBlockSize, raw.length];
 	
 	// Provide space for the encoded message
-	let unitsPerPixel = {
-		"nibble": 6,
-		"byte": 3,
-		"triple": 1
-	}[settings.messageUnit];
-	let encoded = getUintArray(settings.encodedUnitBytes, numPixels * unitsPerPixel);
+	let encoded = getUintArray(settings.encodedUnitBytesStorage, numPixels * settings.unitsPerPixel);;
 	/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
-	let numUnits = numPixels * unitsPerPixel;
+	let numUnits = numPixels * settings.unitsPerPixel;
 	let encodedBlockIdealSize = numUnits / 4;
-	let encodedBlockSize = unitsPerPixel * Math.floor(encodedBlockIdealSize / unitsPerPixel);
+	let encodedBlockSize = settings.unitsPerPixel * Math.floor(encodedBlockIdealSize / settings.unitsPerPixel);
 	let encodedBlockIndices = [0, encodedBlockSize, 2*encodedBlockSize, 3*encodedBlockSize, encoded.length];
 
 	// Explain how to prepare information for the ith worker
@@ -229,41 +224,63 @@ function modelTransmission(){
 			let ctx = document.getElementById(id).getContext('2d', {alpha: false});
 			ctx.putImageData(imageData, 0, 0);
 		}
-		
 		let encodedPixelErrorRateDisplay = document.getElementById('encoded_pixel_error_rate');
 		let errorDetectionRateDisplay = document.getElementById('error_detection_rate');
 		let correctCorrectionRateDisplay = document.getElementById('correct_correction_rate');
 		let accuracyWithCodeDisplay = document.getElementById('accuracy_with_code');
-		let accuracyWithoutCodeDisplay = document.getElementById('accuracy_without_code');
+		let encodedBitErrorDisplay = document.getElementById('encoded_bit_error_avg');
 		
-		encodedPixelErrorRateDisplay.innerText = formatProportion(output.encodedPixelErrors, numPixels);
-		errorDetectionRateDisplay.innerText = formatProportion(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
-		correctCorrectionRateDisplay.innerText = formatProportion(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
-		accuracyWithCodeDisplay.innerText = formatProportion(numPixels - output.decodedPixelErrors, numPixels);
-		accuracyWithoutCodeDisplay.innerText = formatProportion(numPixels - output.uncodedPixelErrors, numPixels);
+		let accuracyWithoutCodeDisplay = document.getElementById('accuracy_without_code');
+		let uncodedBitErrorDisplay = document.getElementById('uncoded_bit_error_avg');
+		
+		encodedPixelErrorRateDisplay.innerText = formatPercentage(output.encodedPixelErrors, numPixels);
+		errorDetectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
+		correctCorrectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
+		accuracyWithCodeDisplay.innerText = formatPercentage(numPixels - output.decodedPixelErrors, numPixels);
+		let totalEncodedBits = encoded.length * settings.encodedUnitBytes * 8;
+		let encodedPixelBits = settings.encodedUnitBytes * settings.unitsPerPixel * 8;
+		encodedBitErrorDisplay.innerText = formatProportionOutOf(
+			output.encodedBitErrors, totalEncodedBits, 1, encodedPixelBits
+		);
+		
+		accuracyWithoutCodeDisplay.innerText = formatPercentage(numPixels - output.uncodedPixelErrors, numPixels);
+		
+		let totalUncodedBits = raw.length * 8 * 0.75; //ignore the alpha bits
+		uncodedBitErrorDisplay.innerText = formatProportionOutOf(
+			output.uncodedBitErrors, totalUncodedBits, 1, 24
+		);
 	}
 	workers.requestComputation(payloadFactory, whenWorkersDone);
 }
 
-function formatProportion(num, den, precision){
-	precision = precision || 1;
-	return (num / den * 100).toFixed(precision) + '%';
+function formatProportionOutOf(num, den, precision, scale){
+	return formatProportion(num, den, precision, scale) + '/' + scale.toString();
 }
 
-function getUintArray(bytesPerUnit, unitCount){
+function formatProportion(num, den, precision, scale){
+	precision = precision || 1;
+	scale = scale || 1;
+	return (num / den * scale).toFixed(precision);
+}
+
+function formatPercentage(num, den, precision){
+	return formatProportion(num, den, precision, 100) + '%';
+}
+
+function getUintArray(encodedStorageSize, unitCount){
 	const arrayViewType = {
 		1: Uint8Array,
 		2: Uint16Array,
 		4: Uint32Array,
 	}
-	let specificType = arrayViewType[bytesPerUnit];
+	let specificType = arrayViewType[encodedStorageSize];
 	let buffer = new SharedArrayBuffer(specificType.BYTES_PER_ELEMENT * unitCount)
 	let view = new specificType(buffer);
 	return view;
 }
 
 function assembleResults (results){
-	const keysToSum = ["encodedPixelErrors", "encodedPixelErrorsDetected", "decodedPixelErrors", "encodedPixelErrorsCorrectlyCorrected", "uncodedPixelErrors"];
+	const keysToSum = ["encodedPixelErrors", "encodedBitErrors", "encodedPixelErrorsDetected", "decodedPixelErrors", "encodedPixelErrorsCorrectlyCorrected", "uncodedPixelErrors", "uncodedBitErrors"];
 	let output = {};
 	for (let i = 0; i < keysToSum.length; i++){
 		let key = keysToSum[i];
@@ -280,20 +297,21 @@ let settingsTemplate = {
 	// The encoder can accept this a nibble at a time (6 total); a byte at a time (3 total); or three bytes at a time (1 total);
 	"none" : {
 		minimumDistance: 1,
-		messageUnit: "bytes",
+		messageUnit: "byte",
 		encodedUnitBytes: 1,
 	},
 	"rep2x" : {
 		minimumDistance: 2,
 		messageUnit: "byte", // as opposed to "nibble" or "triple"
-		encodedUnitBytes: 2, // 1 2 or 4
+		encodedUnitBytes: 2, // 1 2 3 or 4
 	},
 	"rep3x" : {
 		minimumDistance: 3,
 		messageUnit: "byte",
-		encodedUnitBytes: 4,
+		encodedUnitBytes: 3,
 	},
 	"rep4x" : {
+		minimumDistance: 4,
 		minimumDistance: 4,
 		messageUnit: "byte",
 		encodedUnitBytes: 4,
@@ -320,6 +338,21 @@ let settingsTemplate = {
 	}
 }
 
+for (let key in settingsTemplate){
+	if (!settingsTemplate.hasOwnProperty(key)){
+		continue;
+	}
+	let settings = settingsTemplate[key]
+	settings.unitsPerPixel = {
+		"nibble": 6,
+		"byte": 3,
+		"triple": 1
+	}[settings.messageUnit];
+	settings.encodedUnitBytesStorage = {
+		1: 1, 2: 2, 3: 4, 4: 4
+	}[settings.encodedUnitBytes];
+}
+
 function getSettings(){
 	let codeName = document.getElementById("code").value;
 	let settings = {
@@ -330,13 +363,15 @@ function getSettings(){
 	return settings;
 }
 
-function errorProbabilityMoved(){
-	document.querySelector("output[for='" + this.id + "']").innerText = formatProportion(this.valueAsNumber, 1, 2);
+function errorProbabilityMoved(e){
+	document.querySelector("output[for='" + this.id + "']").innerText = formatPercentage(this.valueAsNumber, 1, 2);
 	modelTransmission();
 }
 
-// global state
-var workers = new WorkerPool();
+function codeChanged(e){
+	document.body.classList.toggle("no-code", this.value === "none");
+	modelTransmission();
+}
 
 function checkForHelp(e){
 	// Does the target, or any of its ancestors have extra help?
@@ -391,6 +426,9 @@ function closeInfoBox(e){
 	document.getElementById('info').classList.add("hidden");
 }
 
+// global state
+var workers = new WorkerPool();
+
 function main(){
 	let drop_zone = document.body;
 	drop_zone.addEventListener("drop", drop);
@@ -404,6 +442,10 @@ function main(){
 	let probability_slider = document.getElementById("error_probability");
 	probability_slider.addEventListener("input", errorProbabilityMoved);
 	errorProbabilityMoved.call(probability_slider);
+	
+	let code_selector = document.getElementById("code");
+	code_selector.addEventListener("change", codeChanged);
+	codeChanged.call(code_selector);
 	
 	document.addEventListener('click', checkForHelp);
 	document.getElementById('close').addEventListener('click', closeInfoBox);
