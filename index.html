@@ -1,18 +1,19 @@
 <!doctype html>
 <html>
 <head>
+	<meta charset="utf-8" />
 	<title>Coding theory demo</title>
 	<script defer src="demo.js"></script>
 	<link rel="stylesheet" type="text/css" href="demo.css" />
-	<!-- KaTeX
+	<!-- KaTeX -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css" integrity="sha384-exe4Ak6B0EoJI0ogGxjJ8rn+RN3ftPnEQrGwX59KTCl5ybGzvHGKjhPKk/KC3abb" crossorigin="anonymous">
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js" integrity="sha384-OMvkZ24ANLwviZR2lVq8ujbE/bUO8IR1FdBrKLQBI14Gq5Xp/lksIccGkmKL8m+h" crossorigin="anonymous"></script>
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script> -->
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script>
 </head>
 <body>
-	<header>
+	<!--header>
 		<h1>Coding theory demo</h1>
-	</header>
+	</header-->
 	<main>
 		<label id="Alice" for="get_image">
 			<canvas id="sent" width="0" height="0"></canvas>
@@ -20,56 +21,105 @@
 			<p><strong>Choose a file</strong> or drag it to the page.</p>
 		</label>
 		<section id="Bob">
-			<canvas id="received"></canvas>
-			<p>Image after transmission</p>
+			<canvas id="naive_transmission"></canvas>
+			<p>Transmission without a code</p>
 		</section>
-		<section id="Bob_decoded">
-			<canvas id="computed"></canvas>
-			<p>Image after correction</p>
+		<section id="Bob_decoded" title="This displays the result of transmitting the image using the code.
+		
+		Hover over to see the difference between transmission with and without using a code. Black indicates no difference: bright colours indicate a large difference.">
+			<canvas id="decoded"></canvas>
+			<canvas id="difference"></canvas>
+			<p id="decoded_caption">Image after correction using code</p>
+			<p id="difference_caption">Uncoded versus coded transmission</p>
 		</section>
 	</main>
 	<footer>
 		<fieldset id="channel">
-			<h3>Binary symmetric channel</h3>
-			<label title="Whatfor="error_probability">Bit error rate: <output for="error_probability"></output></label>
+			<h3 id="BSC" title="A binary symmetric channel (BSC) is a simple model of a communications channel. The BSC can transmit only two symbols, conventionally chosen to be 0 and 1. Whenever the sender (Alice) sends $n$ symbols in a row, the receiver (Bob) gets $n$ symbols back.
+			
+			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant $0 \leq p \leq 1$, though we usually assume $p < 1/2$. We further assume that error probabilities for different symbols are independent.">Binary symmetric channel</h3>
+			<label for="error_probability" id="error_probability_label" title="The value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <output for="error_probability"></output><br />
 			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
 			<datalist id="tickmarks">
 				<!--option value="0" label="0%" -->
 				<option value="0.5" label="50%" >
 				<!--option value="1" label="100%" -->
 			</datalist>
+			TODO: log scale?
 			</label>
 		</fieldset>
 		
 		<fieldset id="code_choice">
 			<h3>Code</h3>
-			<label for="code">Code:
-				<select id="code">
-					<option data-dimension="8"  label="[16, 8]-repetition"         value="2xrep"   >
-					<option data-dimension="8"  label="[24, 8]-repetition"         value="3xrep"   >
-					<option data-dimension="4"  label="Hamming [7,4]"              value="Ham(3)"  >
-					<option data-dimension="12" label="Extended Hamming [8,4]"     value="Ham+(3)" >
-					<option data-dimension="24" label="Single check-digit [25,24]" value="check1"  >
-				</select>
-			</label>
+			<select id="code">
+				<option label='none ("full code")'     value="none"     >
+				<option label="twofold repetition"     value="rep2x"    >
+				<option label="threefold repetition"   value="rep3x"    >
+				<!--
+				<option label="fourfold repetition"    value="rep4x"    >
+				<option label="Ham(3)"                 value="Ham(3)2x" >
+				<option label="Ham⁺(3)"                value="Ham+(3)2x">
+				<option label="binary Golay"           value="Golay2x"  >
+				<option label="extendd binary Golay"   value="Golay+2x" >
+				<option label="parity-check extension" value="check1"   >
+				-->
+			</select><br />
 		
-			<label for="message_units">Message units:
+			<label for="message_units" id="message_units_label" title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as an eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so at first thought we may as well assume our message units belong to ${\mathbb{Z}_2}^{24}$.
+			
+			However, we don't want to restrict ourselves to only use codes with dimension $24$. To get around this, let $k$ be a divisor of $24$. We chop a 24-bit pixel string into $r = 24/k$ pieces of length $k$; then we transmit each piece using an $[n, k]$-code. Bob receives $r$ strings of length $n$, which decode to $r$ strings of length $k$. Assembling these last strings together, Bob receives a length $rk = 24$ string.">Message units</label>:
 				<output id="message_units">
 					<span id="dim_4">Separate half-colors $r = r_0 r_1 \in ({\mathbb{Z}_2}^4)^2$</span>
 					<span id="dim_8">Separate colors $r, g, b \in {\mathbb{Z}_2}^8$</span>
 					<span id="dim_12">Single half-string $s = s_0 s_1 \in ({\mathbb{Z}_2}^12)^2$</span>
 					<span id="dim_24">Single string $s = rgb \in {\mathbb{Z}_2}^{24}$</span>
 				</output>
-			</label>
-		
-			<label for="information_rate">Information rate: <output id="information_rate"></output></label>
+			</label><br />
+			<label for="dimension">Dimension</label>: <output id="dimension">$k=24$</output><br />
+			<label for="word_length">Encoded unit word length</label>: <output id="word_length">$n=?$</output><br />
+			<label for="information_rate">Information rate</label>: <output id="information_rate">$R = ?$</output><br />
+			<label for="minimum_distance">Minimum distance</label>: <output id="minimum_distance">$d=?$</output><br />
+			<label for="detectable_errors">Detectable errors</label>: <output id="detectable_errors">$s = ?$</output><br />
+			<label for="correctable_errors">Correctable errors</label>: <output id="detectable_errors">$t = ?$</output>
 		</fieldset>
 		<fieldset id="simulation_stats">
-			<h3>Transmission statistics:</h3>
-			<label for="error_rate_byte">Byte error rate: <output id="error_rate_byte"></output></label>
-			<label for="error_detection_rate">Error detection rate: <output id="error_detection_rate"></output></label>
-			<label for="correct_correction_rate">Correct corrections: <output id="correct_correction_rate"></output></label>
+			<h3>Transmission statistics </h3>
+			<label id="encoded_pixel_error_rate_label" for="encoded_pixel_error_rate" title="After encoding and transmitting a pixel, what proportion of encoded pixels incur an error? If a pixel is encoded to a string of length~$n$, the rate of such errors is $1 - (1-p)^n$. As $n > 24$ for anything except the full code, this is actually a higher rate than using the channel without coding.">
+			Encoded pixels with errors</label>: <output id="encoded_pixel_error_rate"></output><br />
+			
+			<label id="error_detection_rate_label" for="error_detection_rate" title="If Alice's unit encodes as $a$ and is received in error as $b \neq a$, we detect the error if and only if $b$ is not a codeword.
+			
+			Out of the errors that occur to encoded pixels, how many of them did the code detect?">
+			Errors detected</label>: <output id="error_detection_rate"></output><br />
+			
+			<label id="correct_correction_rate_label" for="correct_correction_rate" title="Of the errors we detected, how many of our attempts to correct recovered the original codeword?">
+			Correct corrections</label>: <output id="correct_correction_rate"></output><br />
+			
+			<label id="accuracy_with_code_label" for="accuracy_with_code" title="Using the code, how many pixels were correctly transmitted?">
+			Coded transmission accuracy</label>: <output id="accuracy_with_code"></output></label><br />
+			
+			<label id="encoded_bit_error_avg_label" for="encoded_bit_error_avg" title="After encoding, how how many bits incurred an error, on average?">
+			Average bit errors</label>: <output id="encoded_bit_error_avg"></output>
+			
+			<hr />
+			
+			<label id="accuracy_without_code_label" for="accuracy_without_code" title="If we just transmitted each pixel without using a code, how many would be correctly transmitted?
+			
+			Each bit independently incurs an error with probability $p$, so the total number of errors $X$ in a 24-bit pixel string has a $\operatorname{Bin}(24, p)$ distribution. We get a pixel error whenever $X > 0$, which occurs with probability $1 - \Pr(X = 0) = 1 - (1-p)^{24}$.">
+			Uncoded transmission accuracy</label>: <output id="accuracy_without_code"></output><br />
+			
+			<label id="uncoded_bit_error_avg_label" for="uncoded_bit_error_avg" title="If we didn't use a code, how many bits on average would incur an error?">
+			Average bit errors</label>: <output id="uncoded_bit_error_avg"></output><br />
 		</fieldset>
 	</footer>
+	<aside id="info" class="hidden">
+		<aside>
+			<span class="emoji">ℹ️</span>
+		</aside>
+		<main>
+			
+		</main>
+		<button id="close">Close</button>
+	</aside>
 </body>
 </html>

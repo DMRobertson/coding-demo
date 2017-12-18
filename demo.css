@@ -1,3 +1,5 @@
+/* Main page setup */
+
 body {
 	font-family: sans-serif;
 	padding: 2px;
@@ -16,23 +18,28 @@ body {
 	justify-items: stretch;
 }
 
+.mid_drag {
+	border-color: red;
+	background: #fff4f4;
+}
+
 main {
 	flex-grow: 1;
 	flex-shrink: 1;
 }
 
-main, footer {
+body > main, footer {
 	display: flex;
 	justify-content: space-around;
 	justify-content: space-evenly;
 }
 
-main > *, footer > *{
+body > main > *, footer > *{
 	width: 32%;
 	box-sizing: border-box;
 }
 
-main > * {	
+body > main > * {	
 	border: 1px solid #ccc;
 	padding: 4px;
 	background: #f6f6f6;
@@ -49,18 +56,17 @@ canvas {
 	min-height: 0;
 	width: 100%;
 	object-fit: contain;
+	image-rendering: pixelated;
 }
 
-#Alice {
-	cursor: pointer;
+footer {
+	display: flex;
+	flex-shrink: 0;
 }
 
-.mid_drag {
-	border-color: red;
-	background: #fff4f4;
-}
-
+/* #Alice can be clicked to upload a file */
 #Alice:hover {
+	cursor: pointer;
 	color: red;
 	border-color: red;
 	background: #fff0f0;
@@ -68,36 +74,91 @@ canvas {
 
 #get_image { display: none; }
 
-footer {
-	display: flex;
-	flex-wrap: wrap;
+/* The third display section has two canvases, toggled on hover */
+
+#Bob_decoded:hover {
+	color: blue;
+	border-color: blue;
+	background: #f0f0ff;
 }
 
-footer h2 {
-	flex-basis: 100%;
+#Bob_decoded #difference, #Bob_decoded #difference_caption, #Bob_decoded:hover #decoded, #Bob_decoded:hover #decoded_caption {
+	display: none;
 }
 
-footer fieldset {
-	width: 32%;
-	box-sizing: border-box;
-	border: 0;
-}
-
-footer fieldset label {
+#Bob_decoded:hover #difference, #Bob_decoded:hover #difference_caption {
 	display: block;
 }
 
-output[for="error_probability"] {
-	width: 3.5em;
-	text-align: right;
+/* The footer contains settings and statistics */
+footer fieldset {
+	border: 0;
 }
 
 #error_probability {
 	width: 100%;
 }
 
-
-
 #message_units span {
 	display: none;
+}
+
+/* With no code, hide the correction output */
+body.no-code #Bob_decoded > * {
+	display: none;
+}
+
+/* Infobox tooltips */
+
+#info {
+	padding: 4px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	max-height: 50%;
+	background: #fafafa;
+	border-radius: 0 0 10px 10px;
+	box-shadow: 0 2px 15px black;
+	min-height: 8ex;
+	display: flex;
+	transition: opacity 0.15s;
+}
+
+.hidden {
+	opacity: 0;
+}
+
+#info aside {
+	align-self: center;
+	font-size: 4ex;
+	margin: 12px;
+}
+
+.emoji {
+	font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
+}
+
+#info main {
+	overflow: auto;
+}
+
+#close {
+	margin-left: 6px;
+}
+
+/* Tooltip sources */
+
+[id][title] {
+	cursor: help;
+	text-decoration: underline;
+	text-decoration-skip: ink;
+}
+
+[id][title]:hover {
+	text-shadow: 0 0 1.5ex currentColor;
+}
+
+output {
+	text-decoration: none !important;
 }
