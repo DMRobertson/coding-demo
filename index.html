@@ -41,11 +41,14 @@
 			<label for="error_probability" id="error_probability_label" title="The value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <output for="error_probability"></output><br />
 			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
 			<datalist id="tickmarks">
-				<!--option value="0" label="0%" -->
-				<option value="0.5" label="50%" >
-				<!--option value="1" label="100%" -->
+				<option data-target-value="0" label="0%">
+				<option data-target-value="0.01" label="1%">
+				<option data-target-value="0.1" label="10%">
+				<option data-target-value="0.25" label="25%">
+				<option data-target-value="0.5" label="50%">
+				<option data-target-value="0.75" label="75%">
+				<option data-target-value="1" label="100%">
 			</datalist>
-			TODO: log scale?
 			</label>
 		</fieldset>
 		
@@ -75,12 +78,13 @@
 					<span id="dim_24">Single string $s = rgb \in {\mathbb{Z}_2}^{24}$</span>
 				</output>
 			</label><br />
-			<label for="dimension">Dimension</label>: <output id="dimension">$k=24$</output><br />
+			<label for="dimension">Dimension</label>: <output id="dimension">$k = 24$</output><br />
+			TODO: Make dimension the message unit dimension
 			<label for="word_length">Encoded unit word length</label>: <output id="word_length">$n=?$</output><br />
 			<label for="information_rate">Information rate</label>: <output id="information_rate">$R = ?$</output><br />
 			<label for="minimum_distance">Minimum distance</label>: <output id="minimum_distance">$d=?$</output><br />
 			<label for="detectable_errors">Detectable errors</label>: <output id="detectable_errors">$s = ?$</output><br />
-			<label for="correctable_errors">Correctable errors</label>: <output id="detectable_errors">$t = ?$</output>
+			<label for="correctable_errors">Correctable errors</label>: <output id="correctable_errors">$t = ?$</output>
 		</fieldset>
 		<fieldset id="simulation_stats">
 			<h3>Transmission statistics </h3>

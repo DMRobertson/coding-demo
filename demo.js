@@ -1,5 +1,15 @@
 "use strict"
 
+function autoRenderMath(element){
+	renderMathInElement(element, {
+		delimiters: [ {
+			left: "$",
+			right: "$",
+			display: false
+		} ]
+	});
+}
+
 class WorkerPool {
 	/* No idea what I'm doing here.
 	The intention was to make a system such that the workers only handle the most recent computation request.
@@ -187,7 +197,7 @@ function modelTransmission(){
 	let rawBlockIndices = [0, rawBlockSize, 2*rawBlockSize, 3*rawBlockSize, raw.length];
 	
 	// Provide space for the encoded message
-	let encoded = getUintArray(settings.encodedUnitBytesStorage, numPixels * settings.unitsPerPixel);;
+	let encoded = getUintArray(settings.encodedUnitBytesStorage, numPixels * settings.unitsPerPixel);
 	/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
 	let numUnits = numPixels * settings.unitsPerPixel;
 	let encodedBlockIdealSize = numUnits / 4;
@@ -237,8 +247,8 @@ function modelTransmission(){
 		errorDetectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
 		correctCorrectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
 		accuracyWithCodeDisplay.innerText = formatPercentage(numPixels - output.decodedPixelErrors, numPixels);
-		let totalEncodedBits = encoded.length * settings.encodedUnitBytes * 8;
-		let encodedPixelBits = settings.encodedUnitBytes * settings.unitsPerPixel * 8;
+		let totalEncodedBits = encoded.length * settings.encodedUnitBits;
+		let encodedPixelBits = settings.encodedUnitBits * settings.unitsPerPixel;
 		encodedBitErrorDisplay.innerText = formatProportionOutOf(
 			output.encodedBitErrors, totalEncodedBits, 1, encodedPixelBits
 		);
@@ -294,47 +304,51 @@ function assembleResults (results){
 
 let settingsTemplate = {
 	// Pixels are described by three bytes r, g, b.
-	// The encoder can accept this a nibble at a time (6 total); a byte at a time (3 total); or three bytes at a time (1 total);
+	// The encoder can accept this a nibble at a time (6 total); a byte at a time (3 total); a byte-and-half at a time (2 total); or three bytes at a time (1 total);
 	"none" : {
 		minimumDistance: 1,
 		messageUnit: "byte",
-		encodedUnitBytes: 1,
+		encodedUnitBits: 8,
 	},
 	"rep2x" : {
 		minimumDistance: 2,
-		messageUnit: "byte", // as opposed to "nibble" or "triple"
-		encodedUnitBytes: 2, // 1 2 3 or 4
+		messageUnit: "byte",
+		encodedUnitBits: 16,
 	},
 	"rep3x" : {
 		minimumDistance: 3,
 		messageUnit: "byte",
-		encodedUnitBytes: 3,
+		encodedUnitBits: 24,
 	},
 	"rep4x" : {
 		minimumDistance: 4,
-		minimumDistance: 4,
 		messageUnit: "byte",
-		encodedUnitBytes: 4,
+		encodedUnitBits: 32,
 	},
 	"Ham(3)2x" : {
 		minimumDistance: "?",
 		messageUnit: "nibble",
-		encodedUnitBytes: 1
+		encodedUnitBits: 8,
 	},
 	"Ham+(3)2x" : {
 		minimumDistance: "?",
 		messageUnit: "nibble",
-		encodedUnitBytes: 1
+		encodedUnitBits: 8
 	},
-	"Ham+(3)2x" : {
-		minimumDistance: "?",
-		messageUnit: "nibble",
-		encodedUnitBytes: 1
+	"Golay2x": {
+		minimumDistance: "7",
+		messageUnit: "byte-and-half",
+		encodedUnitBits: 23
+	},
+	"Golay+2x": {
+		minimumDistance: "8",
+		messageUnit: "byte-and-half",
+		encodedUnitBits: 24,
 	},
 	"check1" : {
 		minimumDistance: 1,
-		messageUnit: "triple",
-		encodedUnitBytes: 4
+		messageUnit: "three-bytes",
+		encodedUnitBits: 32
 	}
 }
 
@@ -346,17 +360,31 @@ for (let key in settingsTemplate){
 	settings.unitsPerPixel = {
 		"nibble": 6,
 		"byte": 3,
+		"byte-and-half": 2,
 		"triple": 1
 	}[settings.messageUnit];
-	settings.encodedUnitBytesStorage = {
-		1: 1, 2: 2, 3: 4, 4: 4
-	}[settings.encodedUnitBytes];
+	
+	if (settings.encodedUnitBits <= 8){
+		settings.encodedUnitBytesStorage = 1;
+	} else if (settings.encodedUnitBits <= 16){
+		settings.encodedUnitBytesStorage = 2;
+	} else if (settings.encodedUnitBits <= 24){
+		settings.encodedUnitBytesStorage = 3;
+	} else if (settings.encodedUnitBits <= 32){
+		settings.encodedUnitBytesStorage = 4;
+	}
 }
+
+
+const sensitivityFunction = (x) => Math.pow(x, 3);
+const sensitivityFunctionInv = (x) => Math.pow(x, 1/3);
 
 function getSettings(){
 	let codeName = document.getElementById("code").value;
 	let settings = {
-		bitErrorRate: document.getElementById("error_probability").valueAsNumber,
+		bitErrorRate: sensitivityFunction(
+			document.getElementById("error_probability").valueAsNumber
+		),
 		codeName: codeName,
 	};
 	Object.assign(settings, settingsTemplate[codeName]);
@@ -364,12 +392,23 @@ function getSettings(){
 }
 
 function errorProbabilityMoved(e){
-	document.querySelector("output[for='" + this.id + "']").innerText = formatPercentage(this.valueAsNumber, 1, 2);
+	document.querySelector("output[for='" + this.id + "']").innerText = formatPercentage(sensitivityFunction(this.valueAsNumber), 1, 2);
 	modelTransmission();
 }
 
 function codeChanged(e){
+	let settings = getSettings();
 	document.body.classList.toggle("no-code", this.value === "none");
+	var wordLength = settings.encodedUnitBits * settings.unitsPerPixel;
+	katex.render('n=' + wordLength.toString(), document.getElementById('word_length'));
+	var infRate = formatPercentage(24, wordLength);
+	document.getElementById('information_rate').innerText = infRate;
+	
+	let d = settings.minimumDistance;
+	katex.render('d=' + d.toString(), document.getElementById('minimum_distance'));
+	katex.render('s=' + (d-1).toString(), document.getElementById('detectable_errors'));
+	katex.render('t=' + Math.floor((d-1)/2).toString(), document.getElementById('correctable_errors'));
+	
 	modelTransmission();
 }
 
@@ -409,13 +448,7 @@ function checkForHelp(e){
 		infoTextHolder.appendChild(para);
 	}
 	
-	renderMathInElement(infoTextHolder, {
-		delimiters: [ {
-			left: "$",
-			right: "$",
-			display: false
-		} ]
-	});
+	autoRenderMath(infoTextHolder);
 	
 	// Record which element we're showing the information for
 	info.dataset.titleOf = infoSource.id;
@@ -429,7 +462,7 @@ function closeInfoBox(e){
 // global state
 var workers = new WorkerPool();
 
-function main(){
+function main(){	 	
 	let drop_zone = document.body;
 	drop_zone.addEventListener("drop", drop);
 	drop_zone.addEventListener("dragenter", dragEnter);
@@ -440,12 +473,19 @@ function main(){
 	document.getElementById("get_image").addEventListener("change", filePickerHandler);
 	
 	let probability_slider = document.getElementById("error_probability");
+	let datalist = document.getElementById(probability_slider.getAttribute("list"));
+	let options = datalist.getElementsByTagName("option");
+	for (let i = 0; i < options.length; i++){
+		let value = parseFloat(options[i].dataset.targetValue);
+		options[i].value = sensitivityFunctionInv(value).toString();
+	}
 	probability_slider.addEventListener("input", errorProbabilityMoved);
 	errorProbabilityMoved.call(probability_slider);
 	
 	let code_selector = document.getElementById("code");
 	code_selector.addEventListener("change", codeChanged);
 	codeChanged.call(code_selector);
+	autoRenderMath(document.getElementById("dimension"));
 	
 	document.addEventListener('click', checkForHelp);
 	document.getElementById('close').addEventListener('click', closeInfoBox);
