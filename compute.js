@@ -12,19 +12,8 @@ const codes = {
 	"rep2x": {
 		encode: (x) => (x << 8) + x,
 		isCodeword: (w) => (w & LAST_BYTE) === (w >>> 8),
-		correct: function(w) {
-			let head = w >>> 8;
-			let tail = w & LAST_BYTE;
-			let mask = 1;
-			for (let i = 0; i < 8; i++){
-			/* At any index where head and tail disagree, make a 50/50 guess as to which one is correct*/
-				if (head & mask !== tail & mask && Math.random() < 0.5){
-					w ^= mask;
-				}
-				mask <<= 1;
-			}
-			return w;
-		},
+		// Have to choose whether to take a bit from the first or last 8 bytes. Since each are equally plausible, just go with w. Should set first bytes = last bytes, but since decoding just takes the last byte, we don't bother.
+		correct: (w) => w,
 		decode: (w) => w & LAST_BYTE
 	},
 	"rep3x": {
@@ -45,15 +34,44 @@ const codes = {
 				let hbit = head & mask;
 				let mbit = mid  & mask;
 				let tbit = tail & mask;
-				if (hbit === mbit && mbit === tbit) {
-					mask <<= 1;
-				} else {
-					if (hbit === mbit){
-						// first two agree and are the winner; alter tail (inside w)
-						w ^= mask;
-					}
-					// else: tail is the joint winner. Should change the loser, but since decoding already yields tail and that's already "correct", we won't bother.
+				if (tbit !== hbit && tbit !== mbit) {
+					// first two agree and are the winner; alter tail (inside w)
+					w ^= mask;
 				}
+				// else: tail is the joint winner. Should change the loser, but since decoding already yields tail and that's already "correct", we won't bother.
+				mask <<= 1;
+			}
+			return w;
+		},
+		decode: (w) => w & LAST_BYTE
+	},
+	"rep4x": {
+		encode: (x) => (x << 24) + (x << 16) + (x << 8) + x,
+		isCodeword: function (w) {
+			let byte1 = w >>> 24
+			let byte2 = w >>> 16 & LAST_BYTE;
+			let byte3 = w >>> 8 & LAST_BYTE;
+			let byte4 = w & LAST_BYTE;
+			return byte1 === byte2 && byte2 === byte3 && byte3 == byte4;
+		},
+		correct: function(w) {
+			let byte1 = w >>> 24
+			let byte2 = w >>> 16 & LAST_BYTE;
+			let byte3 = w >>> 8 & LAST_BYTE;
+			let byte4 = w & LAST_BYTE;
+			let mask = 1;
+			for (let i = 0; i < 8; i++){
+				let bit1 = byte1 & mask;
+				let bit2 = byte2 & mask;
+				let bit3 = byte3 & mask;
+				let bit4 = byte4 & mask;
+				// If bit 4 is equal to 2 or 3 of the other bits it's the winner
+				// If it's equal to 1 of the other bits it's a tie
+				// If it's equal to 0 of the other bits it's the loser
+				if (bit4 !== bit1 && bit4 !== bit2 && bit4 !== bit3) {
+					w ^= mask;
+				}
+				// Else should toggle the other bits but we don't care: decoding just strips off the last byte
 				mask <<= 1;
 			}
 			return w;
