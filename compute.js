@@ -89,12 +89,10 @@ function simulateTransmission(p, settings){
 	let diff = p.diff;
 	
 	let encodedPixelErrors = 0;
-	let encodedBitErrors = 0;
 	let encodedPixelErrorsDetected = 0;
 	let encodedPixelErrorsCorrectlyCorrected = 0;
 	let decodedPixelErrors = 0;
 	let uncodedPixelErrors = 0;
-	let uncodedBitErrors = 0;
 	
 	let rawIndex = p.rawStart;
 	let encodedIndex = p.encodedStart;
@@ -114,7 +112,6 @@ function simulateTransmission(p, settings){
 					// Channel applies noise
 					let encodedNoise = randomErrorPattern(settings.bitErrorRate, 8 * settings.encodedUnitBytes);
 					if (encodedNoise !== 0){
-						encodedBitErrors += weight(encodedNoise);
 						encodedPixelError = true;
 					}
 					let original = encoded[encodedIndex + j];
@@ -136,7 +133,6 @@ function simulateTransmission(p, settings){
 					// For the visualisation, we simulate noise and compute the diff
 					let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
 					if (rawNoise !== 0){
-						uncodedBitErrors += weight(rawNoise);
 						uncodedPixelError = true;
 					}
 					raw[rawIndex + j] ^= rawNoise;
@@ -154,12 +150,10 @@ function simulateTransmission(p, settings){
 	}
 	return {
 		encodedPixelErrors: encodedPixelErrors,
-		encodedBitErrors: encodedBitErrors,
 		encodedPixelErrorsDetected: encodedPixelErrorsDetected,
 		encodedPixelErrorsCorrectlyCorrected: encodedPixelErrorsCorrectlyCorrected,
 		decodedPixelErrors: decodedPixelErrors,
 		uncodedPixelErrors: uncodedPixelErrors,
-		uncodedBitErrors: uncodedBitErrors,
 	};
 }
 

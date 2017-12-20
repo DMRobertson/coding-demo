@@ -102,9 +102,6 @@
 			<label id="accuracy_with_code_label" for="accuracy_with_code" title="Using the code, how many pixels were correctly transmitted?">
 			Coded transmission accuracy</label>: <output id="accuracy_with_code"></output></label><br />
 			
-			<label id="encoded_bit_error_avg_label" for="encoded_bit_error_avg" title="After encoding, how how many bits incurred an error, on average?">
-			Average bit errors</label>: <output id="encoded_bit_error_avg"></output>
-			
 			<hr />
 			
 			<label id="accuracy_without_code_label" for="accuracy_without_code" title="If we just transmitted each pixel without using a code, how many would be correctly transmitted?
@@ -112,8 +109,6 @@
 			Each bit independently incurs an error with probability $p$, so the total number of errors $X$ in a 24-bit pixel string has a $\operatorname{Bin}(24, p)$ distribution. We get a pixel error whenever $X > 0$, which occurs with probability $1 - \Pr(X = 0) = 1 - (1-p)^{24}$.">
 			Uncoded transmission accuracy</label>: <output id="accuracy_without_code"></output><br />
 			
-			<label id="uncoded_bit_error_avg_label" for="uncoded_bit_error_avg" title="If we didn't use a code, how many bits on average would incur an error?">
-			Average bit errors</label>: <output id="uncoded_bit_error_avg"></output><br />
 		</fieldset>
 	</footer>
 	<aside id="info" class="hidden">

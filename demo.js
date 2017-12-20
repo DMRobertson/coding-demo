@@ -238,27 +238,13 @@ function modelTransmission(){
 		let errorDetectionRateDisplay = document.getElementById('error_detection_rate');
 		let correctCorrectionRateDisplay = document.getElementById('correct_correction_rate');
 		let accuracyWithCodeDisplay = document.getElementById('accuracy_with_code');
-		let encodedBitErrorDisplay = document.getElementById('encoded_bit_error_avg');
-		
 		let accuracyWithoutCodeDisplay = document.getElementById('accuracy_without_code');
-		let uncodedBitErrorDisplay = document.getElementById('uncoded_bit_error_avg');
 		
 		encodedPixelErrorRateDisplay.innerText = formatPercentage(output.encodedPixelErrors, numPixels);
 		errorDetectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
 		correctCorrectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
 		accuracyWithCodeDisplay.innerText = formatPercentage(numPixels - output.decodedPixelErrors, numPixels);
-		let totalEncodedBits = encoded.length * settings.encodedUnitBits;
-		let encodedPixelBits = settings.encodedUnitBits * settings.unitsPerPixel;
-		encodedBitErrorDisplay.innerText = formatProportionOutOf(
-			output.encodedBitErrors, totalEncodedBits, 1, encodedPixelBits
-		);
-		
 		accuracyWithoutCodeDisplay.innerText = formatPercentage(numPixels - output.uncodedPixelErrors, numPixels);
-		
-		let totalUncodedBits = raw.length * 8 * 0.75; //ignore the alpha bits
-		uncodedBitErrorDisplay.innerText = formatProportionOutOf(
-			output.uncodedBitErrors, totalUncodedBits, 1, 24
-		);
 	}
 	workers.requestComputation(payloadFactory, whenWorkersDone);
 }
@@ -290,7 +276,7 @@ function getUintArray(encodedStorageSize, unitCount){
 }
 
 function assembleResults (results){
-	const keysToSum = ["encodedPixelErrors", "encodedBitErrors", "encodedPixelErrorsDetected", "decodedPixelErrors", "encodedPixelErrorsCorrectlyCorrected", "uncodedPixelErrors", "uncodedBitErrors"];
+	const keysToSum = ["encodedPixelErrors", "encodedPixelErrorsDetected", "decodedPixelErrors", "encodedPixelErrorsCorrectlyCorrected", "uncodedPixelErrors"];
 	let output = {};
 	for (let i = 0; i < keysToSum.length; i++){
 		let key = keysToSum[i];
