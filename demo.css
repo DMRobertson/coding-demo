@@ -77,25 +77,30 @@ footer {
 
 #get_image { display: none; }
 
-/* The third display section has two canvases, toggled on hover */
+/* The other section's canvases change on hover. Change the background to highlight this */
+
+canvas.diff {
+	display: none;
+}
+
+#Bob:hover canvas:not(.diff), #Bob_decoded:hover canvas:not(.diff) {
+	display: none;
+}
+
+#Bob:hover canvas.diff, #Bob_decoded:hover canvas.diff {
+	display: block;
+}
+
+#Bob:hover {
+	color: green;
+	border-color: green;
+	background: #f0fff0;
+}
 
 #Bob_decoded:hover {
 	color: blue;
 	border-color: blue;
 	background: #f0f0ff;
-}
-
-#Bob_decoded #difference, #Bob_decoded #difference_caption, #Bob_decoded:hover #decoded, #Bob_decoded:hover #decoded_caption {
-	display: none;
-}
-
-#Bob_decoded:hover #difference, #Bob_decoded:hover #difference_caption {
-	display: block;
-}
-
-/* With no code, hide the correction output */
-body.no-code #Bob_decoded > * {
-	display: none;
 }
 
 /* The footer contains settings and statistics */

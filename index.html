@@ -13,17 +13,15 @@
 			<input id="get_image" type="file" accept="image/*">
 			<p><strong>Choose a file</strong> or drag it to the page.</p>
 		</label>
-		<section id="Bob">
+		<section id="Bob" title="If Bob doesn't correct his recieved messages, he may as well just ask Alice to send her image without encoding. The simulated result of doing so is displayed here. Hover over the canvas to see the difference between Alice's source image and Bob's (uncoded) received image.">
 			<canvas id="naive_transmission"></canvas>
+			<canvas id="naive_transmission_diff" class="diff"></canvas>
 			<p>Transmission without a code</p>
 		</section>
-		<section id="Bob_decoded" title="This displays the result of transmitting the image using the code.
-		
-		Hover over to see the difference between transmission with and without using a code. Black indicates no difference: bright colours indicate a large difference.">
+		<section id="Bob_decoded" title="The simulated result of Bob decoding Alice's image is displayed here. Hover over the canvas to see the difference between Alice's source image and Bob's (coded) received image.">
 			<canvas id="decoded"></canvas>
-			<canvas id="difference"></canvas>
-			<p id="decoded_caption">Image after correction using code</p>
-			<p id="difference_caption">Uncoded versus coded transmission</p>
+			<canvas id="decoded_diff" class="diff"></canvas>
+			<p>Image after correction using code</p>
 		</section>
 	</main>
 	<footer>
@@ -33,7 +31,7 @@
 			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant 0 ≤ $p$ ≤ 1, though we usually assume $p$ < 1/2. We further assume that error probabilities for different symbols are independent.
 			
 			This slider controls the value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <var>p</var> = <output for="error_probability"></output></h3>
-			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
+			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.4641588833612779" />
 			<datalist id="tickmarks">
 				<option data-target-value="0" label="0%">
 				<option data-target-value="0.01" label="1%">
@@ -60,14 +58,13 @@
 			
 			Usually Alice has a collection of small strings—message units—that she turns into a longer string by a process called encoding. Bob is responsible for correcting any suspected errors; then using decoding to retrieve his best guess of Alice's original message.">Code</label>:
 				<select id="code">
-					<option label='none'                   value="none"     >
 					<option label="twofold repetition"     value="rep2x"    >
 					<option label="threefold repetition"   value="rep3x"    >
 					<option label="fourfold repetition"    value="rep4x"    >
 					<!--<option label="Ham(3)"                 value="Ham(3)2x" >
 					<option label="Ham⁺(3)"                value="Ham+(3)2x">
 					<option label="binary Golay"           value="Golay2x"  >
-					<option label="extendd binary Golay"   value="Golay+2x" >
+					<option label="extended binary Golay"   value="Golay+2x" >
 					<option label="parity-check extension" value="check1"   >
 					-->
 				</select>
