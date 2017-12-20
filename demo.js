@@ -224,13 +224,13 @@ function modelTransmission(){
 			let ctx = document.getElementById(id).getContext('2d', {alpha: false});
 			ctx.putImageData(imageData, 0, 0);
 		}
-		let encodedPixelErrorRateDisplay = document.getElementById('encoded_pixel_error_rate');
+		let encodedPixelAccuracyDisplay = document.getElementById('encoded_pixel_accuracy');
 		let errorDetectionRateDisplay = document.getElementById('error_detection_rate');
 		let correctCorrectionRateDisplay = document.getElementById('correct_correction_rate');
 		let accuracyWithCodeDisplay = document.getElementById('accuracy_with_code');
 		let accuracyWithoutCodeDisplay = document.getElementById('accuracy_without_code');
 		
-		encodedPixelErrorRateDisplay.innerText = formatPercentage(output.encodedPixelErrors, numPixels);
+		encodedPixelAccuracyDisplay.innerText = formatPercentage(numPixels - output.encodedPixelErrors, numPixels);
 		errorDetectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
 		correctCorrectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
 		accuracyWithCodeDisplay.innerText = formatPercentage(numPixels - output.decodedPixelErrors, numPixels);
@@ -385,6 +385,10 @@ function codeChanged(e){
 	modelTransmission();
 }
 
+function smoothScalingToggled(e){
+	document.body.classList.toggle("no-canvas-scaling");
+}
+
 function checkForHelp(e){
 	// Does the target, or any of its ancestors have extra help?
 	let infoSource = e.target;
@@ -463,6 +467,8 @@ function main(){
 	let code_selector = document.getElementById("code");
 	code_selector.addEventListener("change", codeChanged);
 	codeChanged.call(code_selector);
+	
+	document.getElementById('smooth_scaling').addEventListener('click', smoothScalingToggled);
 	
 	document.addEventListener('click', checkForHelp);
 	document.getElementById('close').addEventListener('click', closeInfoBox);

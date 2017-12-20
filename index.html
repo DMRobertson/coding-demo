@@ -42,12 +42,12 @@
 				<option data-target-value="0.75" label="75%">
 				<option data-target-value="1" label="100%">
 			</datalist>
-			</label><br />
+			<br />
 			
 			<label for="uncoded_bit_error_distribution" title="Without using a code, pixels are represented with a 24-bit binary string. Maybe no bits incur errors; maybe only two do; maybe 23 of our 24 total bits incur errors! It all depends on the channel error rate. The distribution of bit errors is shown below.">
 			Bit errors per pixel (uncoded)</label><br />
 			
-			<output id="uncoded_bit_error_avg"></output>
+			<output id="uncoded_bit_error_distribution"></output>
 		</fieldset>
 		
 		<fieldset id="code_choice">
@@ -102,10 +102,10 @@
 		</fieldset>
 		<fieldset id="simulation_stats">
 			<h3>Transmission statistics</h3>
-			<label for="encoded_pixel_error_rate" title="We break a pixel into message units (see middle column), then encode and transmit each process. After doing so, if any of these units occur an error then the pixel incurs an erorr.
+			<label for="encoded_pixel_accuracy" title="We break a pixel into message units (see middle column), then encode each unit to a longer string and transmit. After doing so, if any of these units occur an error then the pixel incurs an erorr.
 			
-			What proportion of pixels incur an error in this way? The total number of bits transmitted is 24$r$, where $r$ is the number of message units per pixel. At least one bit incurs an error with probability 1 - (1-$p$)^($r$$n$). Since $r$ = 1 only if we use the full code (with no error correction), we actually get more pixel errors by encoding!">
-			Encoded pixels with errors</label>: <output id="encoded_pixel_error_rate"></output><br />
+			What proportion of pixels are accurately transmitted? The total number of bits transmitted is 24$r$, where $r$ is the number of message units per pixel. No bits incur an error with probability (1-$p$)^($r$$n$). Since $r$ = 1 only if we use the full code (with no error correction), we actually get more pixel errors by encoding!">
+			Encoded pixels accuracy</label>: <output id="encoded_pixel_accuracy"></output><br />
 			
 			<label for="error_detection_rate" title="If Alice's message unit encodes as $a$ and is received in error as $b \neq a$, we detect the error if and only if $b$ is not a codeword. A pixel incurs an error when one of its message units incurs an error.
 			
@@ -118,15 +118,17 @@
 			<label for="accuracy_with_code" title="Using the code and including Bob's error correction attempt, how many pixels were correctly transmitted?">
 			Coded accuracy</label>: <output id="accuracy_with_code"></output><br />
 			
-			<hr />
-			
 			<label for="accuracy_without_code" title="If we just transmitted each pixel without using a code, how many would be correctly transmitted?
 			
 			Each bit independently incurs an error with probability $p$, so the total number of errors $X$ in a 24-bit pixel string has a Bin(24, $p$) distribution. We get a pixel error whenever $X$ > 0, which occurs with probability 1 - Pr($X$ = 0) = 1 - (1-$p$)^(24).">
 			Uncoded accuracy</label>: <output id="accuracy_without_code"></output>
+			
+			<hr />
+			
+			<input id="smooth_scaling" type="checkbox" checked> <label for="smooth_scaling">Smooth image scaling  </label> <br />
 		</fieldset>
 	</footer>
-	<aside id="info" class="hidden">
+	<article id="info" class="hidden">
 		<aside>
 			<span class="emoji">ℹ️</span>
 		</aside>
@@ -134,6 +136,6 @@
 			
 		</main>
 		<button id="close">Close</button>
-	</aside>
+	</article>
 </body>
 </html>

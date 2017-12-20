@@ -56,6 +56,9 @@ canvas {
 	min-height: 0;
 	width: 100%;
 	object-fit: contain;
+}
+
+.no-canvas-scaling canvas {
 	image-rendering: pixelated;
 }
 
