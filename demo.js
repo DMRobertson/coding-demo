@@ -209,6 +209,9 @@ function modelTransmission(){
 	function whenWorkersDone(results){
 		let output = assembleResults(results);
 		// raw transmitted verbatim through the channel and now has errors applied
+		let w = imageData.width;
+		let h = imageData.height;		
+		
 		const loopData = [
 			[ raw, "naive_transmission" ],
 			[ decoded, "decoded" ],
@@ -216,9 +219,17 @@ function modelTransmission(){
 		for (let i = 0; i < loopData.length; i++){
 			let view = loopData[i][0];
 			let id = loopData[i][1];
+			
+			let canvas = document.getElementById(id);
+			let ctx = canvas.getContext('2d', {alpha: false});
 			imageData.data.set(view);
-			let ctx = document.getElementById(id).getContext('2d', {alpha: false});
 			ctx.putImageData(imageData, 0, 0);
+			
+			let diffCtx = document.getElementById(id + "_diff").getContext('2d', {alpha: false});
+			diffCtx.globalCompositeOperation = "source-over";
+			diffCtx.drawImage(sent, 0, 0, w, h);
+			diffCtx.globalCompositeOperation = "difference";
+			diffCtx.drawImage(canvas, 0, 0, w, h);
 		}
 		let encodedPixelAccuracyDisplay = document.getElementById('encoded_pixel_accuracy');
 		let errorDetectionRateDisplay = document.getElementById('error_detection_rate');

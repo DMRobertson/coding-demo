@@ -79,6 +79,18 @@ footer {
 
 /* The other section's canvases change on hover. Change the background to highlight this */
 
+canvas.diff {
+	display: none;
+}
+
+#Bob:hover canvas:not(.diff), #Bob_decoded:hover canvas:not(.diff) {
+	display: none;
+}
+
+#Bob:hover canvas.diff, #Bob_decoded:hover canvas.diff {
+	display: block;
+}
+
 #Bob:hover {
 	color: green;
 	border-color: green;
