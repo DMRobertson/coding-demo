@@ -96,8 +96,8 @@ function simulateTransmission(p, settings){
 	
 	let rawIndex = p.rawStart;
 	let encodedIndex = p.encodedStart;
-	switch (settings.messageUnit){
-		case "byte":
+	switch (settings.unitsPerPixel){
+		case 3:
 			while (rawIndex < p.rawEnd){
 				let uncodedPixelError = false;
 				let encodedPixelError = false;
@@ -110,7 +110,7 @@ function simulateTransmission(p, settings){
 					// Alice encodes
 					encoded[encodedIndex + j] = settings.code.encode(raw[rawIndex + j]);
 					// Channel applies noise
-					let encodedNoise = randomErrorPattern(settings.bitErrorRate, 8 * settings.encodedUnitBytes);
+					let encodedNoise = randomErrorPattern(settings.bitErrorRate, settings.encodedUnitBits);
 					if (encodedNoise !== 0){
 						encodedPixelError = true;
 					}
@@ -138,6 +138,7 @@ function simulateTransmission(p, settings){
 					raw[rawIndex + j] ^= rawNoise;
 					diff[rawIndex + j] = Math.abs(raw[rawIndex + j] - decoded[rawIndex + j]);
 				}
+				decoded[rawIndex + 3] = 255; //set alpha = 1
 				encodedPixelErrors += encodedPixelError;
 				encodedPixelErrorsDetected += encodedPixelErrorDetected;
 				encodedPixelErrorsCorrectlyCorrected += (encodedPixelErrorDetected && encodedPixelErrorCorrectlyCorrected);
@@ -162,6 +163,6 @@ onmessage = function(e){
 	let settings = p.settings;
 	settings.code = codes[settings.codeName];
 	let results = simulateTransmission(p, settings);
-	results.workerId = p.workerId
+	results.workerId = p.workerId;
 	postMessage(results);
 }

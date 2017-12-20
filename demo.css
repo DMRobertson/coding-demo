@@ -92,6 +92,7 @@ footer {
 
 /* The footer contains settings and statistics */
 footer fieldset {
+	line-height: 1.25;
 	border: 0;
 }
 
@@ -130,7 +131,7 @@ body.no-code #Bob_decoded > * {
 }
 
 #info aside {
-	align-self: center;
+	/* align-self: center; */
 	font-size: 4ex;
 	margin: 12px;
 }
@@ -141,6 +142,7 @@ body.no-code #Bob_decoded > * {
 
 #info main {
 	overflow: auto;
+	padding-right: 8px;
 }
 
 #close {
@@ -149,13 +151,13 @@ body.no-code #Bob_decoded > * {
 
 /* Tooltip sources */
 
-[id][title] {
+[id][title], [for][title] {
 	cursor: help;
 	text-decoration: underline;
 	text-decoration-skip: ink;
 }
 
-[id][title]:hover {
+[id][title]:hover, [for][title]:hover {
 	text-shadow: 0 0 1.5ex currentColor;
 }
 

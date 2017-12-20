@@ -1,15 +1,5 @@
 "use strict"
 
-function autoRenderMath(element){
-	renderMathInElement(element, {
-		delimiters: [ {
-			left: "$",
-			right: "$",
-			display: false
-		} ]
-	});
-}
-
 class WorkerPool {
 	/* No idea what I'm doing here.
 	The intention was to make a system such that the workers only handle the most recent computation request.
@@ -289,51 +279,49 @@ function assembleResults (results){
 }
 
 let settingsTemplate = {
-	// Pixels are described by three bytes r, g, b.
-	// The encoder can accept this a nibble at a time (6 total); a byte at a time (3 total); a byte-and-half at a time (2 total); or three bytes at a time (1 total);
 	"none" : {
 		minimumDistance: 1,
-		messageUnit: "byte",
+		dimension: 8,
 		encodedUnitBits: 8,
 	},
 	"rep2x" : {
 		minimumDistance: 2,
-		messageUnit: "byte",
+		dimension: 8,
 		encodedUnitBits: 16,
 	},
 	"rep3x" : {
 		minimumDistance: 3,
-		messageUnit: "byte",
+		dimension: 8,
 		encodedUnitBits: 24,
 	},
 	"rep4x" : {
 		minimumDistance: 4,
-		messageUnit: "byte",
+		dimension: 8,
 		encodedUnitBits: 32,
 	},
-	"Ham(3)2x" : {
-		minimumDistance: "?",
-		messageUnit: "nibble",
-		encodedUnitBits: 8,
+	"Ham(3)" : {
+		minimumDistance: "1",
+		dimension: 4,
+		encodedUnitBits: 7,
 	},
-	"Ham+(3)2x" : {
-		minimumDistance: "?",
-		messageUnit: "nibble",
+	"Ham+(3)" : {
+		minimumDistance: "2",
+		dimension: 4,
 		encodedUnitBits: 8
 	},
 	"Golay2x": {
 		minimumDistance: "7",
-		messageUnit: "byte-and-half",
+		dimension: 12,
 		encodedUnitBits: 23
 	},
 	"Golay+2x": {
 		minimumDistance: "8",
-		messageUnit: "byte-and-half",
+		dimension: 12,
 		encodedUnitBits: 24,
 	},
 	"check1" : {
 		minimumDistance: 1,
-		messageUnit: "three-bytes",
+		dimension: 24,
 		encodedUnitBits: 32
 	}
 }
@@ -342,25 +330,17 @@ for (let key in settingsTemplate){
 	if (!settingsTemplate.hasOwnProperty(key)){
 		continue;
 	}
-	let settings = settingsTemplate[key]
-	settings.unitsPerPixel = {
-		"nibble": 6,
-		"byte": 3,
-		"byte-and-half": 2,
-		"triple": 1
-	}[settings.messageUnit];
+	let settings = settingsTemplate[key];
+	settings.unitsPerPixel = 24 / settings.dimension;
 	
 	if (settings.encodedUnitBits <= 8){
 		settings.encodedUnitBytesStorage = 1;
 	} else if (settings.encodedUnitBits <= 16){
 		settings.encodedUnitBytesStorage = 2;
-	} else if (settings.encodedUnitBits <= 24){
-		settings.encodedUnitBytesStorage = 3;
 	} else if (settings.encodedUnitBits <= 32){
 		settings.encodedUnitBytesStorage = 4;
 	}
 }
-
 
 const sensitivityFunction = (x) => Math.pow(x, 3);
 const sensitivityFunctionInv = (x) => Math.pow(x, 1/3);
@@ -385,15 +365,22 @@ function errorProbabilityMoved(e){
 function codeChanged(e){
 	let settings = getSettings();
 	document.body.classList.toggle("no-code", this.value === "none");
-	var wordLength = settings.encodedUnitBits * settings.unitsPerPixel;
-	katex.render('n=' + wordLength.toString(), document.getElementById('word_length'));
-	var infRate = formatPercentage(24, wordLength);
-	document.getElementById('information_rate').innerText = infRate;
 	
+	var dimension = settings.dimension;
+	var wordLength = settings.encodedUnitBits;
+	var infRate = formatPercentage(dimension, wordLength);
+	var unitsPerPixel = settings.unitsPerPixel;
 	let d = settings.minimumDistance;
-	katex.render('d=' + d.toString(), document.getElementById('minimum_distance'));
-	katex.render('s=' + (d-1).toString(), document.getElementById('detectable_errors'));
-	katex.render('t=' + Math.floor((d-1)/2).toString(), document.getElementById('correctable_errors'));
+	let s = d - 1;
+	let t = Math.floor( (d - 1)/2 );
+	
+	document.getElementById('dimension').innerText = dimension.toString();
+	document.getElementById('units_per_pixel').innerText = unitsPerPixel.toString();
+	document.getElementById('word_length').innerText = wordLength.toString();
+	document.getElementById('information_rate').innerText = infRate;
+	document.getElementById('minimum_distance').innerText = d;
+	document.getElementById('detectable_errors').innerText = s;
+	document.getElementById('correctable_errors').innerText = t;
 	
 	modelTransmission();
 }
@@ -401,9 +388,16 @@ function codeChanged(e){
 function checkForHelp(e){
 	// Does the target, or any of its ancestors have extra help?
 	let infoSource = e.target;
+	let infoId;
 	while (infoSource){
-		if ( infoSource.hasAttribute('title') && infoSource.hasAttribute('id')){
-			break;
+		if ( infoSource.hasAttribute('title') ){
+			if (infoSource.hasAttribute('id')){
+				infoId = infoSource.getAttribute('id');
+				break;
+			} else if (infoSource.getAttribute('for')){
+				infoId = infoSource.getAttribute('for');
+				break;
+			}
 		}
 		infoSource = infoSource.parentElement;
 	}
@@ -411,7 +405,7 @@ function checkForHelp(e){
 		return;
 	}
 	// Does the display already contain the right information?
-	if (info.dataset.titleOf == infoSource.id){
+	if (info.dataset.titleOf == infoId){
 		info.classList.toggle('hidden');
 		return;
 	}
@@ -426,18 +420,16 @@ function checkForHelp(e){
 	let paragraphs = infoSource.getAttribute('title').split('\n');
 	for (var i = 0; i < paragraphs.length; i++){
 		let text = paragraphs[i].trim();
-		if (text.length == 0){
+		if (text.length === 0){
 			continue;
 		}
 		let para = document.createElement("p");
-		para.appendChild(document.createTextNode(text));
+		// Quick and dirty
+		para.innerHTML = text.replace(/\$([^$]*)\$/g, '<var>$1</var>')
 		infoTextHolder.appendChild(para);
 	}
-	
-	autoRenderMath(infoTextHolder);
-	
 	// Record which element we're showing the information for
-	info.dataset.titleOf = infoSource.id;
+	info.dataset.titleOf = infoId;
 	info.classList.remove("hidden");
 }
 
@@ -448,7 +440,7 @@ function closeInfoBox(e){
 // global state
 var workers = new WorkerPool();
 
-function main(){	 	
+function main(){
 	let drop_zone = document.body;
 	drop_zone.addEventListener("drop", drop);
 	drop_zone.addEventListener("dragenter", dragEnter);
@@ -471,7 +463,6 @@ function main(){
 	let code_selector = document.getElementById("code");
 	code_selector.addEventListener("change", codeChanged);
 	codeChanged.call(code_selector);
-	autoRenderMath(document.getElementById("dimension"));
 	
 	document.addEventListener('click', checkForHelp);
 	document.getElementById('close').addEventListener('click', closeInfoBox);
