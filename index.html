@@ -17,13 +17,9 @@
 			<canvas id="naive_transmission"></canvas>
 			<p>Transmission without a code</p>
 		</section>
-		<section id="Bob_decoded" title="This displays the result of transmitting the image using the code.
-		
-		Hover over to see the difference between transmission with and without using a code. Black indicates no difference: bright colours indicate a large difference.">
+		<section id="Bob_decoded">
 			<canvas id="decoded"></canvas>
-			<canvas id="difference"></canvas>
-			<p id="decoded_caption">Image after correction using code</p>
-			<p id="difference_caption">Uncoded versus coded transmission</p>
+			<p>Image after correction using code</p>
 		</section>
 	</main>
 	<footer>
@@ -60,7 +56,6 @@
 			
 			Usually Alice has a collection of small strings—message units—that she turns into a longer string by a process called encoding. Bob is responsible for correcting any suspected errors; then using decoding to retrieve his best guess of Alice's original message.">Code</label>:
 				<select id="code">
-					<option label='none'                   value="none"     >
 					<option label="twofold repetition"     value="rep2x"    >
 					<option label="threefold repetition"   value="rep3x"    >
 					<option label="fourfold repetition"    value="rep4x"    >

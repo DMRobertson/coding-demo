@@ -3,12 +3,6 @@
 const LAST_BYTE = 0b11111111;
 
 const codes = {
-	"none": {
-		encode: (x) => x,
-		isCodeword: () => true,
-		correct: (w) => w,
-		decode: (w) => w
-	},
 	"rep2x": {
 		encode: (x) => (x << 8) + x,
 		isCodeword: (w) => (w & LAST_BYTE) === (w >>> 8),
@@ -105,7 +99,6 @@ function simulateTransmission(p, settings){
 	let raw = p.raw;
 	let encoded = p.encoded;
 	let decoded = p.decoded;
-	let diff = p.diff;
 	
 	let encodedPixelErrors = 0;
 	let encodedPixelErrorsDetected = 0;
@@ -149,13 +142,13 @@ function simulateTransmission(p, settings){
 						decodedPixelError = true;
 					}
 						
-					// For the visualisation, we simulate noise and compute the diff
+					// For the visualisation, we simulate noise as if transmitted without a code
+					// To be accurate to the spirit of the exercise, this should probably contain the decoding of (encoding + noise); but perhaps it'll be fast just to add noise to the raw image data.
 					let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
 					if (rawNoise !== 0){
 						uncodedPixelError = true;
 					}
 					raw[rawIndex + j] ^= rawNoise;
-					diff[rawIndex + j] = Math.abs(raw[rawIndex + j] - decoded[rawIndex + j]);
 					
 				}
 				decoded[rawIndex + 3] = 255; //set alpha = 1

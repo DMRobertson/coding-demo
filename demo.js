@@ -179,9 +179,7 @@ function modelTransmission(){
 	let raw = getUintArray(1, numPixels * 4);
 	raw.set(imageData.data);
 	// After modelling transmission, this will be decoded into an array of the same type and size.
-	// We use a third array to compute their difference.
 	let decoded = getUintArray(1, numPixels * 4);
-	let diff = getUintArray(1, numPixels * 4);
 	/* Divide up these arrays into 4 blocks, approximately the same length. Each must have length a multiple of 4, or else we could have a situation where one block ends in the middle of describing a pixel (e.g. rg|ba). For example, if I have 9 pixels described by 36 bytes, the natural length for each block is 9 bytes. But the first block would read "rgbargbar", which is bad, so we round the block size down to the nearest multiple of 4, namely 8. Block sizes in bytes are then [8, 8, 8, 12].  */
 	let rawBlockSize = 4 * Math.floor(numPixels / 4);
 	let rawBlockIndices = [0, rawBlockSize, 2*rawBlockSize, 3*rawBlockSize, raw.length];
@@ -199,7 +197,6 @@ function modelTransmission(){
 		return {
 			raw: raw,
 			decoded: decoded,
-			diff: diff,
 			rawStart: rawBlockIndices[i],
 			rawEnd: rawBlockIndices[i+1],
 			encoded: encoded,
@@ -215,7 +212,6 @@ function modelTransmission(){
 		const loopData = [
 			[ raw, "naive_transmission" ],
 			[ decoded, "decoded" ],
-			[ diff, "difference" ],
 		];
 		for (let i = 0; i < loopData.length; i++){
 			let view = loopData[i][0];
@@ -279,11 +275,6 @@ function assembleResults (results){
 }
 
 let settingsTemplate = {
-	"none" : {
-		minimumDistance: 1,
-		dimension: 8,
-		encodedUnitBits: 8,
-	},
 	"rep2x" : {
 		minimumDistance: 2,
 		dimension: 8,
@@ -416,9 +407,7 @@ function createHistogram(){
 }
 
 function codeChanged(e){
-	let settings = getSettings();
-	document.body.classList.toggle("no-code", this.value === "none");
-	
+	let settings = getSettings();	
 	var dimension = settings.dimension;
 	var wordLength = settings.encodedUnitBits;
 	var infRate = formatPercentage(dimension, wordLength);
