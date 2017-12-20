@@ -93,6 +93,11 @@ footer {
 	display: block;
 }
 
+/* With no code, hide the correction output */
+body.no-code #Bob_decoded > * {
+	display: none;
+}
+
 /* The footer contains settings and statistics */
 footer fieldset {
 	line-height: 1.25;
@@ -103,13 +108,34 @@ footer fieldset {
 	width: 100%;
 }
 
-#message_units span {
-	display: none;
+/* Histogram */
+
+#uncoded_bit_error_distribution {
+	position: relative;
+	display: flex;
+	height: 100px;
+	align-items: flex-end;
 }
 
-/* With no code, hide the correction output */
-body.no-code #Bob_decoded > * {
-	display: none;
+#uncoded_bit_error_distribution div {
+	background: #9de;
+	height: 0px;
+	flex-grow: 1;
+	justify-content: space-between;
+	margin: 0 0.5%;
+	transition: height 0.1s;
+}
+
+#uncoded_bit_error_distribution .mode {
+	background: #08c;
+}
+
+#uncoded_bit_error_distribution header {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	text-align: center;
 }
 
 /* Infobox tooltips */

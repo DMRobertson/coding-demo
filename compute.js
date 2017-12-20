@@ -12,19 +12,8 @@ const codes = {
 	"rep2x": {
 		encode: (x) => (x << 8) + x,
 		isCodeword: (w) => (w & LAST_BYTE) === (w >>> 8),
-		correct: function(w) {
-			let head = w >>> 8;
-			let tail = w & LAST_BYTE;
-			/* Nearest codeword is one unit of Hamming distance away. Find an index where head and tail disagree. Toggle this index in tail (within w). */
-			let mask = 1;
-			for (let i = 0; i < 8; i++){
-				if (head & mask !== tail & mask){
-					w ^= mask;
-					return w;
-				}
-				mask <<= 1;
-			}
-		},
+		// Have to choose whether to take a bit from the first or last 8 bytes. Since each are equally plausible, just go with w. Should set first bytes = last bytes, but since decoding just takes the last byte, we don't bother.
+		correct: (w) => w,
 		decode: (w) => w & LAST_BYTE
 	},
 	"rep3x": {
@@ -39,23 +28,53 @@ const codes = {
 			let head = w >>> 16;
 			let mid = w >>> 8 & LAST_BYTE;
 			let tail = w & LAST_BYTE;
-			/* Nearest codeword is one unit of Hamming distance away. Find an index where head, mid and tail do not all agree, with values h, m and t say. One digit will occur twice amongst these three bits; the other once. Set the bit in question of tail to be the value that occurs twice.*/
+			/* Nearest codeword is one unit of Hamming distance away. Find an index where head, mid and tail do not all agree, with values h, m and t say. One digit will occur twice amongst these three bits; the other once. Set the bit in question of tail to be the value that occurs twice. */
 			let mask = 1;
 			for (let i = 0; i < 8; i++){
 				let hbit = head & mask;
 				let mbit = mid  & mask;
 				let tbit = tail & mask;
-				if (hbit === mbit && mbit === tbit) {
-					mask <<= 1;
-					continue;
-				} else {
-					if (hbit === mbit){
-						// first two agree and are the winner; alter tail (inside w)
-						return w ^ mask;
-					}
-					// else: tail is the joint winner. Should change the loser, but since decoding already yields tail and that's already "correct", we won't bother.
+				if (tbit !== hbit && tbit !== mbit) {
+					// first two agree and are the winner; alter tail (inside w)
+					w ^= mask;
 				}
+				// else: tail is the joint winner. Should change the loser, but since decoding already yields tail and that's already "correct", we won't bother.
+				mask <<= 1;
 			}
+			return w;
+		},
+		decode: (w) => w & LAST_BYTE
+	},
+	"rep4x": {
+		encode: (x) => (x << 24) + (x << 16) + (x << 8) + x,
+		isCodeword: function (w) {
+			let byte1 = w >>> 24
+			let byte2 = w >>> 16 & LAST_BYTE;
+			let byte3 = w >>> 8 & LAST_BYTE;
+			let byte4 = w & LAST_BYTE;
+			return byte1 === byte2 && byte2 === byte3 && byte3 == byte4;
+		},
+		correct: function(w) {
+			let byte1 = w >>> 24
+			let byte2 = w >>> 16 & LAST_BYTE;
+			let byte3 = w >>> 8 & LAST_BYTE;
+			let byte4 = w & LAST_BYTE;
+			let mask = 1;
+			for (let i = 0; i < 8; i++){
+				let bit1 = byte1 & mask;
+				let bit2 = byte2 & mask;
+				let bit3 = byte3 & mask;
+				let bit4 = byte4 & mask;
+				// If bit 4 is equal to 2 or 3 of the other bits it's the winner
+				// If it's equal to 1 of the other bits it's a tie
+				// If it's equal to 0 of the other bits it's the loser
+				if (bit4 !== bit1 && bit4 !== bit2 && bit4 !== bit3) {
+					w ^= mask;
+				}
+				// Else should toggle the other bits but we don't care: decoding just strips off the last byte
+				mask <<= 1;
+			}
+			return w;
 		},
 		decode: (w) => w & LAST_BYTE
 	}
@@ -129,7 +148,7 @@ function simulateTransmission(p, settings){
 					if (decoded[rawIndex + j] !== raw[rawIndex + j]){
 						decodedPixelError = true;
 					}
-					
+						
 					// For the visualisation, we simulate noise and compute the diff
 					let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
 					if (rawNoise !== 0){
@@ -137,6 +156,7 @@ function simulateTransmission(p, settings){
 					}
 					raw[rawIndex + j] ^= rawNoise;
 					diff[rawIndex + j] = Math.abs(raw[rawIndex + j] - decoded[rawIndex + j]);
+					
 				}
 				decoded[rawIndex + 3] = 255; //set alpha = 1
 				encodedPixelErrors += encodedPixelError;

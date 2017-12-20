@@ -28,10 +28,11 @@
 	</main>
 	<footer>
 		<fieldset id="channel">
-			<h3 id="BSC" title="A binary symmetric channel (BSC) is a simple model of a communications channel. The BSC can transmit only two symbols, conventionally chosen to be 0 and 1. Whenever the sender (Alice) sends $n$ symbols in a row, the receiver (Bob) gets $n$ symbols back.
+			<h3><label for="error_probability" title="A binary symmetric channel (BSC) is a simple model of a communications channel. The BSC can transmit only two symbols, conventionally chosen to be 0 and 1. Whenever the sender (Alice) sends $n$ symbols in a row, the receiver (Bob) gets $n$ symbols back.
 			
-			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant 0 ≤ $p$ ≤ 1, though we usually assume $p$ < 1/2. We further assume that error probabilities for different symbols are independent.">Binary symmetric channel</h3>
-			<label for="error_probability" title="The value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <var>p</var> = <output for="error_probability"></output><br />
+			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant 0 ≤ $p$ ≤ 1, though we usually assume $p$ < 1/2. We further assume that error probabilities for different symbols are independent.
+			
+			This slider controls the value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <var>p</var> = <output for="error_probability"></output></h3>
 			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
 			<datalist id="tickmarks">
 				<option data-target-value="0" label="0%">
@@ -41,13 +42,15 @@
 				<option data-target-value="0.5" label="50%">
 				<option data-target-value="0.75" label="75%">
 				<option data-target-value="1" label="100%">
-			</datalist>
-			<br />
-			
-			<label for="uncoded_bit_error_distribution" title="Without using a code, pixels are represented with a 24-bit binary string. Maybe no bits incur errors; maybe only two do; maybe 23 of our 24 total bits incur errors! It all depends on the channel error rate. The distribution of bit errors is shown below.">
-			Bit errors per pixel (uncoded)</label><br />
-			
-			<output id="uncoded_bit_error_distribution"></output>
+			</datalist>		
+			<output id="uncoded_bit_error_distribution">
+				<header>
+					<label for="uncoded_bit_error_distribution" title="Without using a code, pixels are represented with a 24-bit binary string. Maybe no bits incur errors; maybe only two do; maybe 23 of our 24 total bits incur errors! It all depends on the channel error rate. The distribution of bit errors is shown below.">Bit errors per pixel (uncoded)</label>
+					<br />
+					mean <output id="uncoded_bit_error_distribution_mean"></output>,
+					mode <output id="uncoded_bit_error_distribution_mode"></output>
+				</header>
+			</output>
 		</fieldset>
 		
 		<fieldset id="code_choice">
@@ -60,9 +63,8 @@
 					<option label='none'                   value="none"     >
 					<option label="twofold repetition"     value="rep2x"    >
 					<option label="threefold repetition"   value="rep3x"    >
-					<!--
 					<option label="fourfold repetition"    value="rep4x"    >
-					<option label="Ham(3)"                 value="Ham(3)2x" >
+					<!--<option label="Ham(3)"                 value="Ham(3)2x" >
 					<option label="Ham⁺(3)"                value="Ham+(3)2x">
 					<option label="binary Golay"           value="Golay2x"  >
 					<option label="extendd binary Golay"   value="Golay+2x" >
