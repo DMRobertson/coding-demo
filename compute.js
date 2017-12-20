@@ -15,15 +15,15 @@ const codes = {
 		correct: function(w) {
 			let head = w >>> 8;
 			let tail = w & LAST_BYTE;
-			/* Nearest codeword is one unit of Hamming distance away. Find an index where head and tail disagree. Toggle this index in tail (within w). */
 			let mask = 1;
 			for (let i = 0; i < 8; i++){
-				if (head & mask !== tail & mask){
+			/* At any index where head and tail disagree, make a 50/50 guess as to which one is correct*/
+				if (head & mask !== tail & mask && Math.random() < 0.5){
 					w ^= mask;
-					return w;
 				}
 				mask <<= 1;
 			}
+			return w;
 		},
 		decode: (w) => w & LAST_BYTE
 	},
@@ -39,7 +39,7 @@ const codes = {
 			let head = w >>> 16;
 			let mid = w >>> 8 & LAST_BYTE;
 			let tail = w & LAST_BYTE;
-			/* Nearest codeword is one unit of Hamming distance away. Find an index where head, mid and tail do not all agree, with values h, m and t say. One digit will occur twice amongst these three bits; the other once. Set the bit in question of tail to be the value that occurs twice.*/
+			/* Nearest codeword is one unit of Hamming distance away. Find an index where head, mid and tail do not all agree, with values h, m and t say. One digit will occur twice amongst these three bits; the other once. Set the bit in question of tail to be the value that occurs twice. */
 			let mask = 1;
 			for (let i = 0; i < 8; i++){
 				let hbit = head & mask;
@@ -47,15 +47,16 @@ const codes = {
 				let tbit = tail & mask;
 				if (hbit === mbit && mbit === tbit) {
 					mask <<= 1;
-					continue;
 				} else {
 					if (hbit === mbit){
 						// first two agree and are the winner; alter tail (inside w)
-						return w ^ mask;
+						w ^= mask;
 					}
 					// else: tail is the joint winner. Should change the loser, but since decoding already yields tail and that's already "correct", we won't bother.
 				}
+				mask <<= 1;
 			}
+			return w;
 		},
 		decode: (w) => w & LAST_BYTE
 	}
@@ -129,7 +130,7 @@ function simulateTransmission(p, settings){
 					if (decoded[rawIndex + j] !== raw[rawIndex + j]){
 						decodedPixelError = true;
 					}
-					
+						
 					// For the visualisation, we simulate noise and compute the diff
 					let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
 					if (rawNoise !== 0){
@@ -137,6 +138,7 @@ function simulateTransmission(p, settings){
 					}
 					raw[rawIndex + j] ^= rawNoise;
 					diff[rawIndex + j] = Math.abs(raw[rawIndex + j] - decoded[rawIndex + j]);
+					
 				}
 				decoded[rawIndex + 3] = 255; //set alpha = 1
 				encodedPixelErrors += encodedPixelError;
