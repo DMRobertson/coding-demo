@@ -358,8 +358,61 @@ function getSettings(){
 }
 
 function errorProbabilityMoved(e){
-	document.querySelector("output[for='" + this.id + "']").innerText = formatPercentage(sensitivityFunction(this.valueAsNumber), 1, 2);
+	let p = sensitivityFunction(this.valueAsNumber);
+	document.querySelector("output[for='" + this.id + "']").innerText = formatPercentage(p, 1, 2);
+	let output = document.getElementById('uncoded_bit_error_distribution');
+	let columns = output.getElementsByTagName('div');
+	let masses = dBinom(columns.length - 1, p);
+	
+	for (let i = 0; i < columns.length; i++){
+		columns[i].style.height = (100 * masses[i]).toString() + '%';
+	}
+	let mode = -1;
+	for (let i = 0; i < columns.length; i++){
+		columns[i].classList.remove("mode");
+		if (mode < 0 && masses[i] > masses[i+1]){
+			mode = i;
+			columns[i].classList.add("mode");
+		};
+	}
+	if (mode === -1){
+		mode = 24;
+		columns[columns.length - 1].classList.add("mode");
+	}
+	document.getElementById('uncoded_bit_error_distribution_mean').innerText = (24 * p).toFixed(1);
+	document.getElementById('uncoded_bit_error_distribution_mode').innerText = mode.toString();
 	modelTransmission();
+}
+
+function dBinom(n, p){
+	let masses = new Array(n+1);
+	if (p === 0 || p === 1){
+		for (let i = 0; i < masses.length; i++){
+			masses[i] = 0;
+		}
+		if (p === 0){
+			masses[0] = 1;
+		} else {
+			masses[n] = 1;
+		}
+		return masses;		
+	}
+	masses[0] = Math.pow(1-p, n);
+	const multiplier = p / (1 - p);
+	for (let i = 1; i <= n; i++){
+		masses[i] = masses[i - 1] * ((n - i + 1) / i ) * multiplier;
+	}
+	return masses;
+}
+
+function createHistogram(){
+	//Maybe this is the sort of thing that SVG ought to do. Oh well.
+	let container = document.getElementById("uncoded_bit_error_distribution");
+	for (let i = 0; i <= 24; i++){
+		let div = document.createElement("div");
+		container.appendChild(div);
+		div.setAttribute("title", i.toString());
+	}
 }
 
 function codeChanged(e){
@@ -462,6 +515,7 @@ function main(){
 		options[i].value = sensitivityFunctionInv(value).toString();
 	}
 	probability_slider.addEventListener("input", errorProbabilityMoved);
+	createHistogram();
 	errorProbabilityMoved.call(probability_slider);
 	
 	let code_selector = document.getElementById("code");
