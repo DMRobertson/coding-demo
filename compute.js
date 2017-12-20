@@ -89,17 +89,15 @@ function simulateTransmission(p, settings){
 	let diff = p.diff;
 	
 	let encodedPixelErrors = 0;
-	let encodedBitErrors = 0;
 	let encodedPixelErrorsDetected = 0;
 	let encodedPixelErrorsCorrectlyCorrected = 0;
 	let decodedPixelErrors = 0;
 	let uncodedPixelErrors = 0;
-	let uncodedBitErrors = 0;
 	
 	let rawIndex = p.rawStart;
 	let encodedIndex = p.encodedStart;
-	switch (settings.messageUnit){
-		case "byte":
+	switch (settings.unitsPerPixel){
+		case 3:
 			while (rawIndex < p.rawEnd){
 				let uncodedPixelError = false;
 				let encodedPixelError = false;
@@ -112,9 +110,8 @@ function simulateTransmission(p, settings){
 					// Alice encodes
 					encoded[encodedIndex + j] = settings.code.encode(raw[rawIndex + j]);
 					// Channel applies noise
-					let encodedNoise = randomErrorPattern(settings.bitErrorRate, 8 * settings.encodedUnitBytes);
+					let encodedNoise = randomErrorPattern(settings.bitErrorRate, settings.encodedUnitBits);
 					if (encodedNoise !== 0){
-						encodedBitErrors += weight(encodedNoise);
 						encodedPixelError = true;
 					}
 					let original = encoded[encodedIndex + j];
@@ -136,12 +133,12 @@ function simulateTransmission(p, settings){
 					// For the visualisation, we simulate noise and compute the diff
 					let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
 					if (rawNoise !== 0){
-						uncodedBitErrors += weight(rawNoise);
 						uncodedPixelError = true;
 					}
 					raw[rawIndex + j] ^= rawNoise;
 					diff[rawIndex + j] = Math.abs(raw[rawIndex + j] - decoded[rawIndex + j]);
 				}
+				decoded[rawIndex + 3] = 255; //set alpha = 1
 				encodedPixelErrors += encodedPixelError;
 				encodedPixelErrorsDetected += encodedPixelErrorDetected;
 				encodedPixelErrorsCorrectlyCorrected += (encodedPixelErrorDetected && encodedPixelErrorCorrectlyCorrected);
@@ -154,12 +151,10 @@ function simulateTransmission(p, settings){
 	}
 	return {
 		encodedPixelErrors: encodedPixelErrors,
-		encodedBitErrors: encodedBitErrors,
 		encodedPixelErrorsDetected: encodedPixelErrorsDetected,
 		encodedPixelErrorsCorrectlyCorrected: encodedPixelErrorsCorrectlyCorrected,
 		decodedPixelErrors: decodedPixelErrors,
 		uncodedPixelErrors: uncodedPixelErrors,
-		uncodedBitErrors: uncodedBitErrors,
 	};
 }
 
@@ -168,6 +163,6 @@ onmessage = function(e){
 	let settings = p.settings;
 	settings.code = codes[settings.codeName];
 	let results = simulateTransmission(p, settings);
-	results.workerId = p.workerId
+	results.workerId = p.workerId;
 	postMessage(results);
 }

@@ -5,15 +5,8 @@
 	<title>Coding theory demo</title>
 	<script defer src="demo.js"></script>
 	<link rel="stylesheet" type="text/css" href="demo.css" />
-	<!-- KaTeX -->
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css" integrity="sha384-exe4Ak6B0EoJI0ogGxjJ8rn+RN3ftPnEQrGwX59KTCl5ybGzvHGKjhPKk/KC3abb" crossorigin="anonymous">
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.js" integrity="sha384-OMvkZ24ANLwviZR2lVq8ujbE/bUO8IR1FdBrKLQBI14Gq5Xp/lksIccGkmKL8m+h" crossorigin="anonymous"></script>
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/contrib/auto-render.min.js" integrity="sha384-cXpztMJlr2xFXyDSIfRWYSMVCXZ9HeGXvzyKTYrn03rsMAlOtIQVzjty5ULbaP8L" crossorigin="anonymous"></script>
 </head>
 <body>
-	<!--header>
-		<h1>Coding theory demo</h1>
-	</header-->
 	<main>
 		<label id="Alice" for="get_image">
 			<canvas id="sent" width="0" height="0"></canvas>
@@ -37,8 +30,8 @@
 		<fieldset id="channel">
 			<h3 id="BSC" title="A binary symmetric channel (BSC) is a simple model of a communications channel. The BSC can transmit only two symbols, conventionally chosen to be 0 and 1. Whenever the sender (Alice) sends $n$ symbols in a row, the receiver (Bob) gets $n$ symbols back.
 			
-			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant $0 \leq p \leq 1$, though we usually assume $p < 1/2$. We further assume that error probabilities for different symbols are independent.">Binary symmetric channel</h3>
-			<label for="error_probability" id="error_probability_label" title="The value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <output for="error_probability"></output><br />
+			Unfortunately, this channel is not perfect. Each symbol Alice sends may incur a random error and be received by Bob as the other symbol. The probability of an error occurring for a single symbol is some constant 0 ≤ $p$ ≤ 1, though we usually assume $p$ < 1/2. We further assume that error probabilities for different symbols are independent.">Binary symmetric channel</h3>
+			<label for="error_probability" title="The value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <var>p</var> = <output for="error_probability"></output><br />
 			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.15" />
 			<datalist id="tickmarks">
 				<option data-target-value="0" label="0%">
@@ -49,74 +42,93 @@
 				<option data-target-value="0.75" label="75%">
 				<option data-target-value="1" label="100%">
 			</datalist>
-			</label>
+			<br />
+			
+			<label for="uncoded_bit_error_distribution" title="Without using a code, pixels are represented with a 24-bit binary string. Maybe no bits incur errors; maybe only two do; maybe 23 of our 24 total bits incur errors! It all depends on the channel error rate. The distribution of bit errors is shown below.">
+			Bit errors per pixel (uncoded)</label><br />
+			
+			<output id="uncoded_bit_error_distribution"></output>
 		</fieldset>
 		
 		<fieldset id="code_choice">
-			<h3>Code</h3>
-			<select id="code">
-				<option label='none ("full code")'     value="none"     >
-				<option label="twofold repetition"     value="rep2x"    >
-				<option label="threefold repetition"   value="rep3x"    >
-				<!--
-				<option label="fourfold repetition"    value="rep4x"    >
-				<option label="Ham(3)"                 value="Ham(3)2x" >
-				<option label="Ham⁺(3)"                value="Ham+(3)2x">
-				<option label="binary Golay"           value="Golay2x"  >
-				<option label="extendd binary Golay"   value="Golay+2x" >
-				<option label="parity-check extension" value="check1"   >
-				-->
-			</select><br />
-		
-			<label for="message_units" id="message_units_label" title="In many image formats, each pixel is represented as a triple of numbers $(r, g, b)$, whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as an eight-digit binary string (since $256 = 2^8$). Combining the three colour channels together, our pixel is described a 24-digit binary string; so at first thought we may as well assume our message units belong to ${\mathbb{Z}_2}^{24}$.
+			<h3><label for="code" title="Let $A$ be a finite set called the alphabet. A code $C$ is a collection of strings over $A$, whose elements are called codewords.
 			
-			However, we don't want to restrict ourselves to only use codes with dimension $24$. To get around this, let $k$ be a divisor of $24$. We chop a 24-bit pixel string into $r = 24/k$ pieces of length $k$; then we transmit each piece using an $[n, k]$-code. Bob receives $r$ strings of length $n$, which decode to $r$ strings of length $k$. Assembling these last strings together, Bob receives a length $rk = 24$ string.">Message units</label>:
-				<output id="message_units">
-					<span id="dim_4">Separate half-colors $r = r_0 r_1 \in ({\mathbb{Z}_2}^4)^2$</span>
-					<span id="dim_8">Separate colors $r, g, b \in {\mathbb{Z}_2}^8$</span>
-					<span id="dim_12">Single half-string $s = s_0 s_1 \in ({\mathbb{Z}_2}^12)^2$</span>
-					<span id="dim_24">Single string $s = rgb \in {\mathbb{Z}_2}^{24}$</span>
-				</output>
-			</label><br />
-			<label for="dimension">Dimension</label>: <output id="dimension">$k = 24$</output><br />
-			TODO: Make dimension the message unit dimension
-			<label for="word_length">Encoded unit word length</label>: <output id="word_length">$n=?$</output><br />
-			<label for="information_rate">Information rate</label>: <output id="information_rate">$R = ?$</output><br />
-			<label for="minimum_distance">Minimum distance</label>: <output id="minimum_distance">$d=?$</output><br />
-			<label for="detectable_errors">Detectable errors</label>: <output id="detectable_errors">$s = ?$</output><br />
-			<label for="correctable_errors">Correctable errors</label>: <output id="correctable_errors">$t = ?$</output>
+			If Alice wants to send a message to Bob over an error-prone channel, she can improve her chances of communicating successfully by only agreeing to send pre-chosen messages: codewords belonging to a certain code. If Bob received something that wasn't a codeword, he knows there's been an error. If the code is carefully constructed, given a corrupted message, Bob can try to recover Alice's original message.
+			
+			Usually Alice has a collection of small strings—message units—that she turns into a longer string by a process called encoding. Bob is responsible for correcting any suspected errors; then using decoding to retrieve his best guess of Alice's original message.">Code</label>:
+				<select id="code">
+					<option label='none'                   value="none"     >
+					<option label="twofold repetition"     value="rep2x"    >
+					<option label="threefold repetition"   value="rep3x"    >
+					<!--
+					<option label="fourfold repetition"    value="rep4x"    >
+					<option label="Ham(3)"                 value="Ham(3)2x" >
+					<option label="Ham⁺(3)"                value="Ham+(3)2x">
+					<option label="binary Golay"           value="Golay2x"  >
+					<option label="extendd binary Golay"   value="Golay+2x" >
+					<option label="parity-check extension" value="check1"   >
+					-->
+				</select>
+			</h3>
+			<label for="dimension" title="If our code's alphabet is equipped with addition (e.g. the integers modulo a prime <var>p</var>), then we can add two words by adding the first digits together, the second digits together, and so on. Then we use arrange the digit sums in a row to form a new word.
+			
+			If our code's alphabet is equipped with (invertible) multiplication, then we can multiply a word by a digit $λ$ by multiplying the first digit by $λ$, the second digit by $λ$, and so on. Then we use arrange the digit products in a row to form a new word, which is called a scalar multiple of the original.
+			
+			A code is called linear if any two codewords' sum is a codeword, and if any scalar multiple of a codeword is a codeword. Such a code can be seen as finite-dimensional vector space over a finite field, allowing us to take advantage of the theory of linear algebra. This means we can choose a basis for our code, and measure the codes' size by finding its dimension (the size of any chosen basis). All of the codes we demonstrate here are linear.">Dimension</label>: <var>k</var> = <output id="dimension"></output><br />
+			
+			<label for="units_per_pixel" title="In many image formats, each pixel is represented as a triple of numbers ($r$, $g$, $b$), whose entries stand for red, green and blue respectively. Higher values correspond to more intense colours. Each entry is typically an integer between 0 and 255, which we may format as an eight-digit binary string (since 256 is 2 to the power 8). Combining the three colour channels together, our pixel is described a 24-digit binary string. This suggests we want to use a 24-dimensional code to transmit our image, one pixel at a time. But we might not want to use such a relatively high dimension!
+			
+			To get around this, let $k$ be a divisor of 24. We chop a 24-bit pixel string into $r$ = 24/$k$ pieces of length $k$; then we transmit each piece using a suitable [$n$, $k$]-code. Bob receives $r$ strings of length $n$, which decode to $r$ strings of length $k$. Assembling these last strings together, Bob receives a length $r$$k$ = 24 string.
+			
+			This field shows the of value $r$.">Message units per pixel</label>: <output id="units_per_pixel"></output><br />
+			
+			<label for="word_length" title="We only consider a code C whose codewords all have the same length n. The literature calls these block codes, but we just called them 'codes'. Not all codes are block codes: Morse code is an example of a famous non-block code.">Encoded unit word length</label>: <var>n</var> = <output id="word_length"></output><br />
+			
+			<label for="information_rate" title="The information rate measures how efficient it is to transmit a message using a given code. If we're thinking of a linear [$n$, $k$] code, this is the ratio $k$/$n$.
+			
+			The idea is that for every $k$-bit string of information Alice wants to send, she has to also transmit an extra $n$ - $k$ bits of extra information to facilitate error correction and detection. So only $k$ out of every $n$ bits transmitted are new information.">Information rate</label>: <output id="information_rate"></output><br />
+			
+			<label for="minimum_distance" title="The Hamming distance between two strings of length $n$ is the number of positions where the strings have different digits. For instance, the strings 0110 and 1100 differ in their first and third columns: thus their Hamming distance is 2.
+			
+			The minimum distance $d$ of a code is the smallest Hamming distance between any two distinct codewords. In other words, any different words must be different in at least $d$ places. The value of $d$ is cruicial for error correction. This is because the larger the value of $d$, the harder it is for random noise to turn one codeword into another.">Minimum distance</label>: <var>d</var> = <output id="minimum_distance"></output><br />
+			
+			<label for="detectable_errors" title="Suppose that Alice transmits an encoded message unit $a$ which Bob recieves as $b$. If $b$ ≠ $a$ then an error has occurred during transmission. We say that the size of this error is the number of columns where $a$ and $b$ have different digits (i.e. the Hamming distance between $a$ and $b$). Bob will only be able to detect this error if $b$ is not a codeword.
+			
+			If it takes at least a size $d$ error to turn Alice's codeword $a$ into another codeword $b$, then Bob is guaranteed to spot any error of size $s$ = $d$ - 1 or less. Depending on the circumstances, he might be able to spot some larger errors too, depending on the code and messages sent and received.">Detectable errors</label>: <var>s</var> = <output id="detectable_errors"></output><br />
+			
+			<label for="correctable_errors" title="Correction is a little harder for Bob. He needs a strategy to infer the most likely codeword $a$ that Alice sent, upon receiving the word $b$. To keep things simple, it'd be very helpful if there wasn't a tie between two equally likely messages $a$₁ and $a$₂ from Alice; otherwise Bob's correction wouldn't be unique.
+			
+			If the closest codewords are $d$ units (errors) apart, Bob is guaranteed to be able to uniquely correct any error of size $t$ = floor([$d$ - 1]/2) or less. He may be able to correct certain larger errors too, depending on the code and the messages being exchanged.">Correctable errors</label>: <var>t</var> = <output id="correctable_errors"></output>
 		</fieldset>
 		<fieldset id="simulation_stats">
-			<h3>Transmission statistics </h3>
-			<label id="encoded_pixel_error_rate_label" for="encoded_pixel_error_rate" title="After encoding and transmitting a pixel, what proportion of encoded pixels incur an error? If a pixel is encoded to a string of length~$n$, the rate of such errors is $1 - (1-p)^n$. As $n > 24$ for anything except the full code, this is actually a higher rate than using the channel without coding.">
-			Encoded pixels with errors</label>: <output id="encoded_pixel_error_rate"></output><br />
+			<h3>Transmission statistics</h3>
+			<label for="encoded_pixel_accuracy" title="We break a pixel into message units (see middle column), then encode each unit to a longer string and transmit. After doing so, if any of these units occur an error then the pixel incurs an erorr.
 			
-			<label id="error_detection_rate_label" for="error_detection_rate" title="If Alice's unit encodes as $a$ and is received in error as $b \neq a$, we detect the error if and only if $b$ is not a codeword.
+			What proportion of pixels are accurately transmitted? The total number of bits transmitted is 24$r$, where $r$ is the number of message units per pixel. No bits incur an error with probability (1-$p$)^($r$$n$). Since $r$ = 1 only if we use the full code (with no error correction), we actually get more pixel errors by encoding!">
+			Encoded pixels accuracy</label>: <output id="encoded_pixel_accuracy"></output><br />
+			
+			<label for="error_detection_rate" title="If Alice's message unit encodes as $a$ and is received in error as $b \neq a$, we detect the error if and only if $b$ is not a codeword. A pixel incurs an error when one of its message units incurs an error.
 			
 			Out of the errors that occur to encoded pixels, how many of them did the code detect?">
 			Errors detected</label>: <output id="error_detection_rate"></output><br />
 			
-			<label id="correct_correction_rate_label" for="correct_correction_rate" title="Of the errors we detected, how many of our attempts to correct recovered the original codeword?">
+			<label for="correct_correction_rate" title="Of the errors we detected, how many of our attempts to correct recovered the original codeword?">
 			Correct corrections</label>: <output id="correct_correction_rate"></output><br />
 			
-			<label id="accuracy_with_code_label" for="accuracy_with_code" title="Using the code, how many pixels were correctly transmitted?">
-			Coded transmission accuracy</label>: <output id="accuracy_with_code"></output></label><br />
+			<label for="accuracy_with_code" title="Using the code and including Bob's error correction attempt, how many pixels were correctly transmitted?">
+			Coded accuracy</label>: <output id="accuracy_with_code"></output><br />
 			
-			<label id="encoded_bit_error_avg_label" for="encoded_bit_error_avg" title="After encoding, how how many bits incurred an error, on average?">
-			Average bit errors</label>: <output id="encoded_bit_error_avg"></output>
+			<label for="accuracy_without_code" title="If we just transmitted each pixel without using a code, how many would be correctly transmitted?
+			
+			Each bit independently incurs an error with probability $p$, so the total number of errors $X$ in a 24-bit pixel string has a Bin(24, $p$) distribution. We get a pixel error whenever $X$ > 0, which occurs with probability 1 - Pr($X$ = 0) = 1 - (1-$p$)^(24).">
+			Uncoded accuracy</label>: <output id="accuracy_without_code"></output>
 			
 			<hr />
 			
-			<label id="accuracy_without_code_label" for="accuracy_without_code" title="If we just transmitted each pixel without using a code, how many would be correctly transmitted?
-			
-			Each bit independently incurs an error with probability $p$, so the total number of errors $X$ in a 24-bit pixel string has a $\operatorname{Bin}(24, p)$ distribution. We get a pixel error whenever $X > 0$, which occurs with probability $1 - \Pr(X = 0) = 1 - (1-p)^{24}$.">
-			Uncoded transmission accuracy</label>: <output id="accuracy_without_code"></output><br />
-			
-			<label id="uncoded_bit_error_avg_label" for="uncoded_bit_error_avg" title="If we didn't use a code, how many bits on average would incur an error?">
-			Average bit errors</label>: <output id="uncoded_bit_error_avg"></output><br />
+			<input id="smooth_scaling" type="checkbox" checked> <label for="smooth_scaling">Smooth image scaling  </label> <br />
 		</fieldset>
 	</footer>
-	<aside id="info" class="hidden">
+	<article id="info" class="hidden">
 		<aside>
 			<span class="emoji">ℹ️</span>
 		</aside>
@@ -124,6 +136,6 @@
 			
 		</main>
 		<button id="close">Close</button>
-	</aside>
+	</article>
 </body>
 </html>

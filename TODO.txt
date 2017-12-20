@@ -5,4 +5,7 @@ TODO (apart from make the thing work)
 	* Work out why big images fail miserably
 	* Do we need to count average bit errors? (Speed)
 	* Hide stuff with CSS that's not applicable to the full code ('none')
+	* Store settings with a cookie
+	* Fork me on github
+	* Move the accuracy displays over the images themselves?
 	
