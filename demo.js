@@ -408,7 +408,7 @@ function dBinom(n, p){
 }
 
 function createHistogram(){
-	//Maybe this is the sort of thing that SVG ought to do. Oh well.
+	// TODO: use SVG to draw this?
 	let container = document.getElementById("uncoded_bit_error_distribution");
 	for (let i = 0; i <= 24; i++){
 		let div = document.createElement("div");

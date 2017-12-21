@@ -1,6 +1,8 @@
 "use strict";
 
-const LAST_BYTE = 0b11111111;
+const FIRST_NIBBLE = 0b00001111;
+const LAST_NIBBLE  = 0b11110000;
+const LAST_BYTE    = 0b11111111;
 
 const codes = {
 	"rep2x": {
@@ -71,6 +73,9 @@ const codes = {
 			return w;
 		},
 		decode: (w) => w & LAST_BYTE
+	},
+	"Ham(3)": {
+		
 	}
 }
 
@@ -95,7 +100,8 @@ function weight(error){
 	return errors;
 }
 
-function simulateTransmission(p, settings){
+function simulateTransmission(p){
+	let settings = p.settings;
 	let raw = p.raw;
 	let encoded = p.encoded;
 	let decoded = p.decoded;
@@ -106,62 +112,73 @@ function simulateTransmission(p, settings){
 	let decodedPixelErrors = 0;
 	let uncodedPixelErrors = 0;
 	
-	let rawIndex = p.rawStart;
-	let encodedIndex = p.encodedStart;
 	switch (settings.unitsPerPixel){
 		case 3:
-			while (rawIndex < p.rawEnd){
-				let uncodedPixelError = false;
-				let encodedPixelError = false;
-				let encodedPixelErrorDetected = false;
-				// if we didn't notice an error, the following boolean is true
-				let encodedPixelErrorCorrectlyCorrected = true;
-				let decodedPixelError = false;
-				
-				for (let j = 0; j < 3; j++) {
-					// Alice encodes
-					encoded[encodedIndex + j] = settings.code.encode(raw[rawIndex + j]);
-					// Channel applies noise
-					let encodedNoise = randomErrorPattern(settings.bitErrorRate, settings.encodedUnitBits);
-					if (encodedNoise !== 0){
-						encodedPixelError = true;
-					}
-					let original = encoded[encodedIndex + j];
-					encoded[encodedIndex + j] ^= encodedNoise;
-					// Bob corrects if he spots an error
-					if (!settings.code.isCodeword(encoded[encodedIndex + j])){
-						encodedPixelErrorDetected = true;
-						encoded[encodedIndex + j] = settings.code.correct(encoded[encodedIndex + j]);
-						if (encoded[encodedIndex + j] !== original){
-							encodedPixelErrorCorrectlyCorrected = false;
-						}
-					}
-					// Bob decodes
-					decoded[rawIndex + j] = settings.code.decode(encoded[encodedIndex + j]);
-					if (decoded[rawIndex + j] !== raw[rawIndex + j]){
-						decodedPixelError = true;
-					}
-						
-					// For the visualisation, we simulate noise as if transmitted without a code
-					// To be accurate to the spirit of the exercise, this should probably contain the decoding of (encoding + noise); but perhaps it'll be fast just to add noise to the raw image data.
-					let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
-					if (rawNoise !== 0){
-						uncodedPixelError = true;
-					}
-					raw[rawIndex + j] ^= rawNoise;
-					
-				}
-				decoded[rawIndex + 3] = 255; //set alpha = 1
-				encodedPixelErrors += encodedPixelError;
-				encodedPixelErrorsDetected += encodedPixelErrorDetected;
-				encodedPixelErrorsCorrectlyCorrected += (encodedPixelErrorDetected && encodedPixelErrorCorrectlyCorrected);
-				decodedPixelErrors += decodedPixelError;
-				uncodedPixelErrors += uncodedPixelError;
-				rawIndex += 4;
-				encodedIndex += 3;
-			}
-		break;
+			var encoder = encodePixelByByte;
+			var decoder = decodePixelToBytes;
+			break;
 	}
+	
+	// Loop over each pixel
+	for (
+		let rawIndex = p.rawStart, encodedIndex = p.encodedStart;
+		rawIndex < p.rawEnd;
+		rawIndex += 4, encodedIndex += settings.unitsPerPixel
+	){
+		// Alice encodes
+		encoder(p, rawIndex, encodedIndex);
+		
+		let encodedPixelError = false;
+		let encodedPixelErrorDetected = false;
+		// if we didn't notice an error, the following boolean is true
+		let encodedPixelErrorCorrectlyCorrected = true;
+		let decodedPixelError = false;
+		
+		// For each encoded message unit describing the current pixel:
+		for (let i = 0; i < settings.unitsPerPixel; i++){
+			// Channel applies noise
+			let encodedNoise = randomErrorPattern(settings.bitErrorRate, settings.encodedUnitBits);
+			if (encodedNoise !== 0){
+				encodedPixelError = true;
+				encoded[encodedIndex + i] ^= encodedNoise;
+			}
+			
+			// Bob corrects if he doesn't find a codeword.		
+			let originalEncoded = encoded[encodedIndex + i];
+			if (!settings.code.isCodeword(encoded[encodedIndex + i])){
+				encodedPixelErrorDetected = true;
+				encoded[encodedIndex + i] = settings.code.correct(encoded[encodedIndex + i]);
+				if (encoded[encodedIndex + i] !== originalEncoded){
+					encodedPixelErrorCorrectlyCorrected = false;
+				}
+			}
+		}
+		
+		// Bob decodes
+		decodedPixelError = decoder(p, rawIndex, encodedIndex);
+		p.decoded[rawIndex + 3] = 255; //set alpha = 1
+		
+		encodedPixelErrors += encodedPixelError;
+		encodedPixelErrorsDetected += encodedPixelErrorDetected;
+		encodedPixelErrorsCorrectlyCorrected += (encodedPixelErrorDetected && encodedPixelErrorCorrectlyCorrected);
+		decodedPixelErrors += decodedPixelError;
+	}
+	
+	
+	// For the visualisation, we simulate noise as if transmitted without a code
+	for (let rawIndex = p.rawStart; rawIndex < p.rawEnd; rawIndex += 4){
+		let uncodedPixelError = false;
+		for (let j = 0; j < 3; j++){
+			// To be accurate to the spirit of the exercise, raw should probably contain the decoding of (encoding + noise); but we just add noise to the raw image.
+			let rawNoise = randomErrorPattern(settings.bitErrorRate, 8);
+			if (rawNoise !== 0){
+				uncodedPixelError = true;
+			}
+			p.raw[rawIndex + j] ^= rawNoise;
+		}
+		uncodedPixelErrors += uncodedPixelError;
+	}
+			
 	return {
 		encodedPixelErrors: encodedPixelErrors,
 		encodedPixelErrorsDetected: encodedPixelErrorsDetected,
@@ -169,6 +186,24 @@ function simulateTransmission(p, settings){
 		decodedPixelErrors: decodedPixelErrors,
 		uncodedPixelErrors: uncodedPixelErrors,
 	};
+}
+
+function encodePixelByByte(p, rawIndex, encodedIndex){
+	for (let j = 0; j < 3; j++) {
+		p.encoded[encodedIndex + j] = p.settings.code.encode(p.raw[rawIndex + j]);
+	}
+}
+
+function decodePixelToBytes(p, rawIndex, encodedIndex){
+	let decodedPixelError = false;
+	for (let j = 0; j < 3; j++){
+		p.decoded[rawIndex + j] = p.settings.code.decode(p.encoded[encodedIndex + j]);
+		if (p.decoded[rawIndex + j] !== p.raw[rawIndex + j]){
+			decodedPixelError = true;
+		}	
+	}
+	return decodedPixelError;
+			
 }
 
 onmessage = function(e){
