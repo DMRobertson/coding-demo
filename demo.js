@@ -278,7 +278,7 @@ function assembleResults (results){
 	for (let i = 0; i < keysToSum.length; i++){
 		let key = keysToSum[i];
 		output[key] = 0;
-		for (let j = 0; j < 4; j++){
+		for (let j = 0; j < results.length; j++){
 			output[key] += results[j][key];
 		}
 	}

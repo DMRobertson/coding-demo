@@ -1,19 +1,27 @@
 "use strict";
 
-const LAST_BIT     = 0b00000001;
-const LAST_NIBBLE  = 0b00001111;
-const FIRST_NIBBLE = 0b11110000;
-const LAST_BYTE    = 0b11111111;
+const LAST_BIT        = 0b00000001;
+const LAST_NIBBLE     = 0b00001111;
+const FIRST_NIBBLE    = 0b11110000;
+const LAST_SEVEN_BITS = 0b01111111;
+const LAST_BYTE       = 0b11111111;
 
 const codes = {
 	"rep2x": {
 		encode: (x) => (x << 8) + x,
 		// Have to choose whether to take a bit from the first or last 8 bytes. Since each are equally plausible, just go with w. Should set first bytes = last bytes, but since decoding just takes the last byte, we don't bother.
+		isCodeword: (w) => (w & LAST_BYTE) === (w >>> 8),
 		correct: (w) => w,
 		decode: (w) => w & LAST_BYTE
 	},
 	"rep3x": {
 		encode: (x) => (x << 16) + (x << 8) + x,
+		isCodeword: function (w) {
+			let head = w >>> 16;
+			let mid = w >>> 8 & LAST_BYTE;
+			let tail = w & LAST_BYTE;
+			return head === mid && mid === tail;
+		},
 		correct: function(w) {
 			let head = w >>> 16;
 			let mid = w >>> 8 & LAST_BYTE;
@@ -37,6 +45,13 @@ const codes = {
 	},
 	"rep4x": {
 		encode: (x) => (x << 24) + (x << 16) + (x << 8) + x,
+		isCodeword: function (w) {
+			let byte1 = w >>> 24
+			let byte2 = w >>> 16 & LAST_BYTE;
+			let byte3 = w >>> 8 & LAST_BYTE;
+			let byte4 = w & LAST_BYTE;
+			return byte1 === byte2 && byte2 === byte3 && byte3 == byte4;
+		},
 		correct: function(w) {
 			let byte1 = w >>> 24
 			let byte2 = w >>> 16 & LAST_BYTE;
@@ -78,7 +93,10 @@ const codes = {
 			let w3 = b2 ^ b3 ^ b4;
 			return (w1 << 6) + (w2 << 5) + (w3 << 4) + x;
 		},
-		correct: function(w){
+		isCodeword: function(w){
+			return this.compute_syndrome(w) === 0;
+		},
+		compute_syndrome(w){
 			/* A corresponding parity-check matrix is
 				100|1101
 				010|1011
@@ -95,7 +113,10 @@ const codes = {
 			let s1 = w1 ^ w4 ^ w5 ^ w7;
 			let s2 = w2 ^ w4 ^ w6 ^ w7;
 			let s3 = w3 ^ w5 ^ w6 ^ w7;
-			let syndrome = (s1 << 2) + (s2 << 1) + (s3 << 0);
+			return (s1 << 2) + (s2 << 1) + (s3 << 0);
+		},
+		correct: function(w){
+			let syndrome = this.compute_syndrome(w);
 			// which column in H contains the binary expansion of i?
 			if (syndrome !== 0){
 				const indices = [3, 2, 6, 1, 5, 4, 7];
@@ -107,7 +128,35 @@ const codes = {
 		decode: function(w){
 			return w & LAST_NIBBLE;
 		}
-	}
+	},
+	"Ham+(3)": {
+		encode: function(x){
+			let w = codes["Ham(3)"].encode(x);
+			let checkBit = weight(w) % 2;
+			return (checkBit << 7) + w;
+		},
+		isCodeword(w){
+			let syndromeCheck = weight(w) % 2;
+			let syndromeBase = codes["Ham(3)"].compute_syndrome(w & LAST_SEVEN_BITS);
+			return (syndromeCheck === 0) && (syndromeBase === 0);
+		},
+		correct: function(w){
+			let syndromeCheck = weight(w) % 2;
+			let syndromeBase = codes["Ham(3)"].compute_syndrome(w);
+			if (syndromeCheck !== 0){
+				let checkBit = 1 << 7;
+				if (syndromeBase === 0){
+					return w ^ checkBit;
+				} else {
+					return (w & checkBit) + codes["Ham(3)"].correct(w & LAST_SEVEN_BITS);
+				}
+			}
+			return w;
+		},
+		decode: function(w){
+			return w & LAST_NIBBLE;
+		}
+	},
 }
 
 function randomErrorPattern(rate, bitlength){
@@ -153,7 +202,6 @@ function simulateTransmission(p){
 			var decoder = decodePixelToBytes;
 			break;
 	}
-	
 	// Loop over each pixel
 	for (
 		let rawIndex = p.rawStart, encodedIndex = p.encodedStart;
@@ -180,10 +228,9 @@ function simulateTransmission(p){
 			}
 			
 			// Bob corrects
-			let encodedBeforeCorrection = encoded[encodedIndex + i];
-			encoded[encodedIndex + i] = settings.code.correct(encoded[encodedIndex + i]);
-			if (encoded[encodedIndex + i] !== encodedBeforeCorrection){
+			if (!settings.code.isCodeword(encoded[encodedIndex + i])){
 				encodedPixelErrorDetected = true;
+				encoded[encodedIndex + i] = settings.code.correct(encoded[encodedIndex + i]);
 				if (encoded[encodedIndex + i] !== encodedBeforeNoise){
 					encodedPixelErrorCorrectlyCorrected = false;
 				}
@@ -191,7 +238,8 @@ function simulateTransmission(p){
 		}
 		
 		// Bob decodes
-		decodedPixelError = decoder(p, rawIndex, encodedIndex);
+		decoder(p, rawIndex, encodedIndex);
+		decodedPixelError = checkForPixelError(p, rawIndex);
 		p.decoded[rawIndex + 3] = 255; //set alpha = 1
 		
 		encodedPixelErrors += encodedPixelError;
@@ -200,7 +248,7 @@ function simulateTransmission(p){
 		decodedPixelErrors += decodedPixelError;
 	}
 	
-	
+	/*
 	// For the visualisation, we simulate noise as if transmitted without a code
 	for (let rawIndex = p.rawStart; rawIndex < p.rawEnd; rawIndex += 4){
 		let uncodedPixelError = false;
@@ -214,6 +262,7 @@ function simulateTransmission(p){
 		}
 		uncodedPixelErrors += uncodedPixelError;
 	}
+	*/
 			
 	return {
 		encodedPixelErrors: encodedPixelErrors,
@@ -234,7 +283,6 @@ function decodePixelToBytes(p, rawIndex, encodedIndex){
 	for (let j = 0; j < 3; j++){
 		p.decoded[rawIndex + j] = p.settings.code.decode(p.encoded[encodedIndex + j]);
 	}
-	return checkForPixelError(p, rawIndex);
 }
 
 function checkForPixelError(p, rawIndex){
@@ -262,7 +310,6 @@ function decodePixelToNibbles(p, rawIndex, encodedIndex){
 			+ p.settings.code.decode(p.encoded[encodedIndex + 2*j + 1])
 		);
 	}
-	return checkForPixelError(p, rawIndex);
 }
 
 
