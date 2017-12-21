@@ -113,7 +113,7 @@ function dragEnd (e) {
 
 function filePickerHandler(e){
 	if (this.files.length > 0){
-		loadFile(this.files[0]);
+		loadFile(this);
 	}
 }
 
@@ -124,7 +124,7 @@ function DTGetFile(dt){
 				return dt.items[i].getAsFile();
 			}
 		}
-	} else if (dt.files.length > 0) {
+	} else if (dt.files && dt.files.length > 0) {
 		return dt.files[0];
 	}
 	return null;
