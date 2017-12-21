@@ -113,7 +113,7 @@ function dragEnd (e) {
 
 function filePickerHandler(e){
 	if (this.files.length > 0){
-		loadFile(this.files[0]);
+		loadFile(this);
 	}
 }
 
@@ -124,7 +124,7 @@ function DTGetFile(dt){
 				return dt.items[i].getAsFile();
 			}
 		}
-	} else if (dt.files.length > 0) {
+	} else if (dt.files && dt.files.length > 0) {
 		return dt.files[0];
 	}
 	return null;
@@ -278,7 +278,7 @@ function assembleResults (results){
 	for (let i = 0; i < keysToSum.length; i++){
 		let key = keysToSum[i];
 		output[key] = 0;
-		for (let j = 0; j < 4; j++){
+		for (let j = 0; j < results.length; j++){
 			output[key] += results[j][key];
 		}
 	}
@@ -302,22 +302,22 @@ let settingsTemplate = {
 		encodedUnitBits: 32,
 	},
 	"Ham(3)" : {
-		minimumDistance: "1",
+		minimumDistance: 3,
 		dimension: 4,
 		encodedUnitBits: 7,
 	},
 	"Ham+(3)" : {
-		minimumDistance: "2",
+		minimumDistance: 4,
 		dimension: 4,
 		encodedUnitBits: 8
 	},
 	"Golay2x": {
-		minimumDistance: "7",
+		minimumDistance: 7,
 		dimension: 12,
 		encodedUnitBits: 23
 	},
 	"Golay+2x": {
-		minimumDistance: "8",
+		minimumDistance: 8,
 		dimension: 12,
 		encodedUnitBits: 24,
 	},
@@ -408,7 +408,7 @@ function dBinom(n, p){
 }
 
 function createHistogram(){
-	//Maybe this is the sort of thing that SVG ought to do. Oh well.
+	// TODO: use SVG to draw this?
 	let container = document.getElementById("uncoded_bit_error_distribution");
 	for (let i = 0; i <= 24; i++){
 		let div = document.createElement("div");

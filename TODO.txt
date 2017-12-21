@@ -4,4 +4,7 @@ TODO (apart from make the thing work)
 	* Store settings with a cookie?
 	* Fork me on github
 	* Move the accuracy displays over the images themselves?
-	
+	* Add in the remaining codes
+	* Compute the diffs (in main thread) on mouse enter and leave;
+	* Or compute the diffs in workers?
+	* NaN -> N/A
