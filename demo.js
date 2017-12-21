@@ -302,22 +302,22 @@ let settingsTemplate = {
 		encodedUnitBits: 32,
 	},
 	"Ham(3)" : {
-		minimumDistance: "1",
+		minimumDistance: 3,
 		dimension: 4,
 		encodedUnitBits: 7,
 	},
 	"Ham+(3)" : {
-		minimumDistance: "2",
+		minimumDistance: 4,
 		dimension: 4,
 		encodedUnitBits: 8
 	},
 	"Golay2x": {
-		minimumDistance: "7",
+		minimumDistance: 7,
 		dimension: 12,
 		encodedUnitBits: 23
 	},
 	"Golay+2x": {
-		minimumDistance: "8",
+		minimumDistance: 8,
 		dimension: 12,
 		encodedUnitBits: 24,
 	},
