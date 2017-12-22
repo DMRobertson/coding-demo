@@ -76,12 +76,12 @@ const codes = {
 				// If it's equal to 1 of the other bits it's a tie
 				// If it's equal to 0 of the other bits it's the loser
 				if (bit4 !== bit1 && bit4 !== bit2 && bit4 !== bit3) {
-					w ^= mask;
+					byte4 ^= mask;
 				}
 				// Else should toggle the other bits but we don't care: decoding just strips off the last byte
 				mask <<= 1;
 			}
-			return w;
+			return (byte4 << 24) + (byte4 << 16) + (byte4 << 8) + byte4;
 		},
 		decode: (w) => w & LAST_BYTE
 	},
