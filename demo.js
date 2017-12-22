@@ -238,8 +238,16 @@ function modelTransmission(){
 		let accuracyWithoutCodeDisplay = document.getElementById('accuracy_without_code');
 		
 		encodedPixelAccuracyDisplay.innerText = formatPercentage(numPixels - output.encodedPixelErrors, numPixels);
-		errorDetectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
-		correctCorrectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
+		if (output.encodedPixelErrors === 0){
+			errorDetectionRateDisplay.innerText = "none to detect";
+		} else {
+			errorDetectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsDetected, output.encodedPixelErrors);
+		}
+		if (output.encodedPixelErrorsDetected === 0){
+			correctCorrectionRateDisplay.innerText = "none to correct";
+		} else {
+			correctCorrectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
+		}
 		accuracyWithCodeDisplay.innerText = formatPercentage(numPixels - output.decodedPixelErrors, numPixels);
 		accuracyWithoutCodeDisplay.innerText = formatPercentage(numPixels - output.uncodedPixelErrors, numPixels);
 	}
