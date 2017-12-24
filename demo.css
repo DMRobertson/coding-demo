@@ -77,6 +77,39 @@ footer {
 
 #get_image { display: none; }
 
+main section {
+	position: relative;
+}
+
+main section aside {
+	display: none;
+	position: absolute;
+	padding: 4px;
+	top: 0px;
+	right: 0px;
+	border-radius: 0 0 0 10px;
+	color: white;
+}
+
+body.image_provided main section aside {
+	display: block;
+}
+
+main aside label {
+	display: none;
+	vertical-align: middle;
+}
+
+main section:hover aside label {
+	display: inline;
+}
+
+main aside output {
+	font-size: 130%;
+	font-weight: bold;
+	vertical-align: middle;
+}
+
 /* The other section's canvases change on hover. Change the background to highlight this */
 
 canvas.diff {
@@ -91,16 +124,9 @@ canvas.diff {
 	display: block;
 }
 
-#Bob:hover {
-	color: green;
-	border-color: green;
-	background: #f0fff0;
-}
-
-#Bob_decoded:hover {
-	color: blue;
-	border-color: blue;
-	background: #f0f0ff;
+#Bob:hover, #Bob_decoded:hover {
+	border-color: #888;
+	background: #e8e8e8;
 }
 
 /* The footer contains settings and statistics */
@@ -147,7 +173,7 @@ footer fieldset {
 
 #info {
 	padding: 4px;
-	position: fixed;
+	position: absolute;
 	top: 0;
 	left: 0;
 	right: 0;
@@ -161,7 +187,7 @@ footer fieldset {
 }
 
 .hidden {
-	opacity: 0;
+	display: none !important;
 }
 
 #info aside {

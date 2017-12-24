@@ -142,6 +142,7 @@ function loadFile(dt){
 }
 
 function imageLoaded(e){
+	document.body.classList.add("image_provided");
 	URL.revokeObjectURL(this.src);
 	
 	// Set canvas dimensions
@@ -231,7 +232,13 @@ function modelTransmission(){
 			diffCtx.globalCompositeOperation = "difference";
 			diffCtx.drawImage(canvas, 0, 0, w, h);
 		}
-		let encodedPixelAccuracyDisplay = document.getElementById('encoded_pixel_accuracy');
+		displayStatistics(numPixels, output);
+	}
+	workers.requestComputation(payloadFactory, whenWorkersDone);
+}
+
+function displayStatistics(numPixels, output){
+	let encodedPixelAccuracyDisplay = document.getElementById('encoded_pixel_accuracy');
 		let errorDetectionRateDisplay = document.getElementById('error_detection_rate');
 		let correctCorrectionRateDisplay = document.getElementById('correct_correction_rate');
 		let accuracyWithCodeDisplay = document.getElementById('accuracy_with_code');
@@ -248,10 +255,15 @@ function modelTransmission(){
 		} else {
 			correctCorrectionRateDisplay.innerText = formatPercentage(output.encodedPixelErrorsCorrectlyCorrected, output.encodedPixelErrorsDetected);
 		}
-		accuracyWithCodeDisplay.innerText = formatPercentage(numPixels - output.decodedPixelErrors, numPixels);
-		accuracyWithoutCodeDisplay.innerText = formatPercentage(numPixels - output.uncodedPixelErrors, numPixels);
-	}
-	workers.requestComputation(payloadFactory, whenWorkersDone);
+		displayPercentageIn(accuracyWithCodeDisplay, numPixels - output.decodedPixelErrors, numPixels);
+		displayPercentageIn(accuracyWithoutCodeDisplay, numPixels - output.uncodedPixelErrors, numPixels);
+}
+
+function displayPercentageIn(element, num, den){
+	element.innerText = formatPercentage(num, den);
+	let proportion = num / den;
+	let parent = element.parentElement;
+	parent.style.backgroundColor = "hsla(" + 120 * proportion.toString() + ", 75%, 60%, 0.9)";
 }
 
 function formatProportionOutOf(num, den, precision, scale){
