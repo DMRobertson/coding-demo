@@ -5,6 +5,7 @@ const LAST_NIBBLE     = 0b00001111;
 const FIRST_NIBBLE    = 0b11110000;
 const LAST_SEVEN_BITS = 0b01111111;
 const LAST_BYTE       = 0b11111111;
+const LAST_TWELVE_BITS = 0b111111111111; 
 
 const GolayPRows = [
 	0b10101110001,
@@ -31,6 +32,28 @@ for (let i = 0; i < 11; i++){
 }
 for (let i = 11; i < 23; i++){
 	GolayCheckCols[i] = GolayPRows[i - 11];
+}
+
+const GolaySyndromeTable = [
+	0b01011100011,
+	0b10111000110,
+	0b00101101111, 
+	0b01011011110,
+	0b10110111100,
+	0b00110011011,
+	0b01100110110, 
+	0b11001101100,
+	0b11000111011,
+	0b11010010101,
+	0b11111001001,
+	0b10101110001, 
+];
+
+function lcycle(word, shift, length){
+	let mask = (1 << length) - 1;
+	let lpart = (word << shift) & mask;
+	let rpart = word >> (length - shift);
+	return lpart | rpart;
 }
 
 const codes = {
@@ -211,7 +234,6 @@ const codes = {
 			return this.computeSyndrome(w) === 0;
 		},
 		computeSyndrome: function (w){
-			// Think there is something wrong here
 			let syn = 0;
 			let mask = 1;
 			for (let i = 0; i < GolayCheckCols.length; i++){
@@ -221,7 +243,61 @@ const codes = {
 				mask <<= 1;
 			}
 			return syn;
-		}
+		},
+		correct: function(r){
+			// See the fourth section of https://www.sciencedirect.com/science/article/pii/S1665642313715438
+			// 2.
+			let syn = this.computeSyndrome(r);
+			let synWeight = weight(syn);
+			// 3.
+			if (synWeight <= 3){
+				// Their bitwise subtraction is bitwise addition, i.e. XOR ^
+				return r ^ (syn << 12);
+			}
+			// 4.
+			for (let i = 0; i < GolaySyndromeTable.length; i++){
+				let synDiff = syn ^ GolaySyndromeTable[i];
+				// 5.
+				if (weight(synDiff) <= 2){
+					return r ^ (synDiff << 12);
+				}
+			}
+			// 6.
+			let rcycled = lcycle(r, 11, 23);
+			let cycledSyn = this.computeSyndrome(rcycled);
+			let cycledSynWeight = weight(cycledSyn);
+			// 7.
+			if (cycledSynWeight === 2 || cycledSynWeight === 3){
+				// the formula they give seems to just be a cyclic shift
+				return lcycle(rcycled ^ (cycledSyn << 12), 12, 23)
+			}
+			// 8.
+			for (let i = 0; i < 12; i++){
+				let cycledSynDiff = cycledSyn - GolaySyndromeTable[i];
+				let cycledSynDiffWeight = weight(cycledSynDiff);
+				// 9.
+				if (cycledSynDiffWeight === 1 || cycledSynDiffWeight == 2){
+					// again, the formula they give seems to just be a cyclic shift
+					return lcycle(rcycled ^ (cycledSyn << 12) ^ (1 << i), 12, 23);
+				}
+			}
+			// 10.
+			let rdashed = r ^ 0b1;
+			let dashedSyn = syn - GolaySyndromeTable[0];
+			// 11.
+			for (let i = 1; i < 12; i++){
+				let dashedSynDiff = dashedSyn - GolaySyndromeTable[i];
+				if ( weight(dashedSynDiff) === 1 ){
+					return rdashed ^ (dashedSynDiff << 12) ^ (1 << i);
+				}
+			}
+			// 13. Shouldn't get here.
+			console.assert(false);
+		},
+		decode: function(w){
+			return w & LAST_TWELVE_BITS;
+		},
+		
 	}
 }
 
@@ -267,6 +343,9 @@ function simulateTransmission(p){
 			var encoder = encodePixelByByte;
 			var decoder = decodePixelToBytes;
 			break;
+		case 12:
+			var encoder = encodePixelBy12Bits;
+			var decoder = decodePixelTo12Bits;
 	}
 	// Loop over each pixel
 	for (
@@ -368,7 +447,6 @@ function encodePixelByNibbles(p, rawIndex, encodedIndex){
 }
 
 function decodePixelToNibbles(p, rawIndex, encodedIndex){
-	let decodedPixelError = false;
 	for (let j = 0; j < 3; j++) {
 		p.decoded[rawIndex + j] = (
 			( p.settings.code.decode(p.encoded[encodedIndex + 2*j]) << 4 )
@@ -377,6 +455,21 @@ function decodePixelToNibbles(p, rawIndex, encodedIndex){
 	}
 }
 
+function encodePixelBy12Bits(p, rawIndex, encodedIndex){
+	let r = p.raw[rawIndex];
+	let g = p.raw[rawIndex + 1];
+	let b = p.raw[rawIndex + 2];
+	p.encoded[encodedIndex]     = p.settings.code.encode( (r << 4) + (g >>> 4) );
+	p.encoded[encodedIndex + 1] = p.settings.code.encode( ((g & LAST_NIBBLE) << 8) + b );
+}
+
+function decodePixelTo12Bits(p, rawIndex, encodedIndex){
+	let w1 = p.settings.code.decode(p.encoded[encodedIndex]);
+	let w2 = p.settings.code.decode(p.encoded[encodedIndex + 1]);
+	p.decoded[rawIndex] = w1 >> 4;
+	p.decoded[rawIndex + 1] = ((w1 & LAST_NIBBLE) << 4) + (w2 >> 8);
+	p.decoded[rawIndex + 2] = w2 & LAST_BYTE;
+}
 
 onmessage = function(e){
 	let p = e.data; // payload
