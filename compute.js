@@ -26,11 +26,11 @@ for (let i = 0; i < 12; i++){
 }
 
 const GolayCheckCols = new Array(23);
-for (let i = 0; i < 12; i++){
-	GolayCheckCols[i] = 1 << i;
+for (let i = 0; i < 11; i++){
+	GolayCheckCols[i] = 1 << (10 - i);
 }
-for (let i = 12; i < 23; i++){
-	GolayCheckCols[i] = GolayGenRows[i - 12];
+for (let i = 11; i < 23; i++){
+	GolayCheckCols[i] = GolayPRows[i - 11];
 }
 
 const codes = {
@@ -216,17 +216,13 @@ const codes = {
 			let mask = 1;
 			for (let i = 0; i < GolayCheckCols.length; i++){
 				if (w & mask) {
-					syn ^= GolayCheckCols[GolayCheckCols - i - 1];
+					syn ^= GolayCheckCols[GolayCheckCols.length - i - 1];
 				}
 				mask <<= 1;
 			}
-			return w;
+			return syn;
 		}
 	}
-}
-
-for (let i = 0; i < (1 << 2); i++){
-	console.assert( codes.Golay.isCodeword(codes.Golay.encode(i)) , i)
 }
 
 function randomErrorPattern(rate, bitlength){
