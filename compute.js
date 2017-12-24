@@ -6,6 +6,33 @@ const FIRST_NIBBLE    = 0b11110000;
 const LAST_SEVEN_BITS = 0b01111111;
 const LAST_BYTE       = 0b11111111;
 
+const GolayPRows = [
+	0b10101110001,
+	0b11111001001,
+	0b11010010101,
+	0b11000111011,
+	0b11001101100,
+	0b01100110110,
+	0b00110011011,
+	0b10110111100,
+	0b01011011110,
+	0b00101101111,
+	0b10111000110,
+	0b01011100011,
+];
+const GolayGenRows = new Array(12);
+for (let i = 0; i < 12; i++){
+	GolayGenRows[i] = (GolayPRows[i] << 12) + (1 << (12 - i - 1));
+}
+
+const GolayCheckCols = new Array(23);
+for (let i = 0; i < 12; i++){
+	GolayCheckCols[i] = 1 << i;
+}
+for (let i = 12; i < 23; i++){
+	GolayCheckCols[i] = GolayGenRows[i - 12];
+}
+
 const codes = {
 	"rep2x": {
 		encode: (x) => (x << 8) + x,
@@ -103,14 +130,15 @@ const codes = {
 			return (w1 << 6) + (w2 << 5) + (w3 << 4) + x;
 		},
 		isCodeword: function(w){
-			return this.compute_syndrome(w) === 0;
+			return this.computeSyndrome(w) === 0;
 		},
-		compute_syndrome(w){
+		computeSyndrome(w){
 			/* A corresponding parity-check matrix is
 				100|1101
 				010|1011
 				001|0111
 			*/
+			// TODO: is this clearer/more efficient using the approach in Golay encode?
 			let w1 = (w >> 6) & LAST_BIT;
 			let w2 = (w >> 5) & LAST_BIT;
 			let w3 = (w >> 4) & LAST_BIT;
@@ -125,7 +153,7 @@ const codes = {
 			return (s1 << 2) + (s2 << 1) + (s3 << 0);
 		},
 		correct: function(w){
-			let syndrome = this.compute_syndrome(w);
+			let syndrome = this.computeSyndrome(w);
 			// which column in H contains the binary expansion of i?
 			if (syndrome !== 0){
 				const indices = [3, 2, 6, 1, 5, 4, 7];
@@ -146,12 +174,12 @@ const codes = {
 		},
 		isCodeword(w){
 			let syndromeCheck = weight(w) % 2;
-			let syndromeBase = codes["Ham(3)"].compute_syndrome(w & LAST_SEVEN_BITS);
+			let syndromeBase = codes["Ham(3)"].computeSyndrome(w & LAST_SEVEN_BITS);
 			return (syndromeCheck === 0) && (syndromeBase === 0);
 		},
 		correct: function(w){
 			let syndromeCheck = weight(w) % 2;
-			let syndromeBase = codes["Ham(3)"].compute_syndrome(w);
+			let syndromeBase = codes["Ham(3)"].computeSyndrome(w);
 			if (syndromeCheck !== 0){
 				let checkBit = 1 << 7;
 				if (syndromeBase === 0){
@@ -166,6 +194,39 @@ const codes = {
 			return w & LAST_NIBBLE;
 		}
 	},
+	"Golay" : {
+		// Following the scheme of http://www.sciencedirect.com/science/article/pii/S1665642313715438
+		encode: function(x){
+			let w = 0;
+			let mask = 1;
+			for (let i = 0; i < GolayGenRows.length; i++){
+				if (x & mask){
+					w ^= GolayGenRows[GolayGenRows.length - i - 1];
+				}
+				mask <<= 1;
+			}
+			return w;
+		},
+		isCodeword: function (w){
+			return this.computeSyndrome(w) === 0;
+		},
+		computeSyndrome: function (w){
+			// Think there is something wrong here
+			let syn = 0;
+			let mask = 1;
+			for (let i = 0; i < GolayCheckCols.length; i++){
+				if (w & mask) {
+					syn ^= GolayCheckCols[GolayCheckCols - i - 1];
+				}
+				mask <<= 1;
+			}
+			return w;
+		}
+	}
+}
+
+for (let i = 0; i < (1 << 2); i++){
+	console.assert( codes.Golay.isCodeword(codes.Golay.encode(i)) , i)
 }
 
 function randomErrorPattern(rate, bitlength){
