@@ -9,9 +9,12 @@ const LAST_BYTE       = 0b11111111;
 const codes = {
 	"rep2x": {
 		encode: (x) => (x << 8) + x,
-		// Have to choose whether to take a bit from the first or last 8 bytes. Since each are equally plausible, just go with w. Should set first bytes = last bytes, but since decoding just takes the last byte, we don't bother.
 		isCodeword: (w) => (w & LAST_BYTE) === (w >>> 8),
-		correct: (w) => w,
+		// Have to choose whether to take a bit from the first or last 8 bytes. Since each are equally plausible, just go with the last byte
+		correct: function(w){
+			let x = w & LAST_BYTE;
+			return (x << 8) + x;
+		},
 		decode: (w) => w & LAST_BYTE
 	},
 	"rep3x": {
@@ -26,17 +29,23 @@ const codes = {
 			let head = w >>> 16;
 			let mid = w >>> 8 & LAST_BYTE;
 			let tail = w & LAST_BYTE;
-			/* Nearest codeword is one unit of Hamming distance away. Find an index where head, mid and tail do not all agree, with values h, m and t say. One digit will occur twice amongst these three bits; the other once. Set the bit in question of tail to be the value that occurs twice. */
 			let mask = 1;
 			for (let i = 0; i < 8; i++){
 				let hbit = head & mask;
 				let mbit = mid  & mask;
 				let tbit = tail & mask;
-				if (tbit !== hbit && tbit !== mbit) {
-					// first two agree and are the winner; alter tail (inside w)
+				if (hbit === mbit && mbit === tbit){
+					// no action needed
+				} else if (hbit === mbit){
+					// tail is incorrect
 					w ^= mask;
+				} else if (hbit === tbit){
+					// middle is incorrect
+					w ^= mask << 8;
+				} else if (mbit === tbit){
+					// head is incorrect
+					w ^= mask << 16;
 				}
-				// else: tail is the joint winner. Should change the loser, but since decoding already yields tail and that's already "correct", we won't bother.
 				mask <<= 1;
 			}
 			return w;
@@ -67,12 +76,12 @@ const codes = {
 				// If it's equal to 1 of the other bits it's a tie
 				// If it's equal to 0 of the other bits it's the loser
 				if (bit4 !== bit1 && bit4 !== bit2 && bit4 !== bit3) {
-					w ^= mask;
+					byte4 ^= mask;
 				}
 				// Else should toggle the other bits but we don't care: decoding just strips off the last byte
 				mask <<= 1;
 			}
-			return w;
+			return (byte4 << 24) + (byte4 << 16) + (byte4 << 8) + byte4;
 		},
 		decode: (w) => w & LAST_BYTE
 	},
@@ -248,7 +257,7 @@ function simulateTransmission(p){
 		decodedPixelErrors += decodedPixelError;
 	}
 	
-	/*
+	
 	// For the visualisation, we simulate noise as if transmitted without a code
 	for (let rawIndex = p.rawStart; rawIndex < p.rawEnd; rawIndex += 4){
 		let uncodedPixelError = false;
@@ -262,7 +271,6 @@ function simulateTransmission(p){
 		}
 		uncodedPixelErrors += uncodedPixelError;
 	}
-	*/
 			
 	return {
 		encodedPixelErrors: encodedPixelErrors,
