@@ -259,7 +259,7 @@ const codes = {
 				let synDiff = syn ^ GolaySyndromeTable[i];
 				// 5.
 				if (weight(synDiff) <= 2){
-					return r ^ (synDiff << 12);
+					return r ^ (synDiff << 12) ^ (1 << i);
 				}
 			}
 			// 6.
@@ -273,26 +273,27 @@ const codes = {
 			}
 			// 8.
 			for (let i = 0; i < 12; i++){
-				let cycledSynDiff = cycledSyn - GolaySyndromeTable[i];
+				let cycledSynDiff = cycledSyn ^ GolaySyndromeTable[i];
 				let cycledSynDiffWeight = weight(cycledSynDiff);
 				// 9.
 				if (cycledSynDiffWeight === 1 || cycledSynDiffWeight == 2){
 					// again, the formula they give seems to just be a cyclic shift
-					return lcycle(rcycled ^ (cycledSyn << 12) ^ (1 << i), 12, 23);
+					let u = rcycled ^ (cycledSynDiff << 12) ^ (1 << i);
+					return lcycle(u, 12, 23);
 				}
 			}
 			// 10.
 			let rdashed = r ^ 0b1;
-			let dashedSyn = syn - GolaySyndromeTable[0];
+			let dashedSyn = syn ^ GolaySyndromeTable[0];
 			// 11.
 			for (let i = 1; i < 12; i++){
-				let dashedSynDiff = dashedSyn - GolaySyndromeTable[i];
+				let dashedSynDiff = dashedSyn ^ GolaySyndromeTable[i];
 				if ( weight(dashedSynDiff) === 1 ){
 					return rdashed ^ (dashedSynDiff << 12) ^ (1 << i);
 				}
 			}
 			// 13. Shouldn't get here.
-			console.assert(false);
+			// console.assert(false, r);
 		},
 		decode: function(w){
 			return w & LAST_TWELVE_BITS;
