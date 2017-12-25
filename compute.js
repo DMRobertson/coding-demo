@@ -5,7 +5,8 @@ const LAST_NIBBLE     = 0b00001111;
 const FIRST_NIBBLE    = 0b11110000;
 const LAST_SEVEN_BITS = 0b01111111;
 const LAST_BYTE       = 0b11111111;
-const LAST_TWELVE_BITS = 0b111111111111; 
+const LAST_TWELVE_BITS = 0b111111111111; // (1 << 12) - 1
+const LAST_TWENTY_THREE_BITS = 0b11111111111111111111111; // (1 << 23) - 1
 
 const GolayPRows = [
 	0b10101110001,
@@ -214,10 +215,11 @@ const codes = {
 			return w;
 		},
 		decode: function(w){
+			// same as codes["Ham(3)"].decode
 			return w & LAST_NIBBLE;
 		}
 	},
-	"Golay" : {
+	"Golay": {
 		// Following the scheme of http://www.sciencedirect.com/science/article/pii/S1665642313715438
 		encode: function(x){
 			let w = 0;
@@ -298,7 +300,25 @@ const codes = {
 		decode: function(w){
 			return w & LAST_TWELVE_BITS;
 		},
-		
+	},
+	"Golay+": {
+		encode: function(x){
+			let w = codes.Golay.encode(x);
+			let checkBit = weight(w) % 2;
+			return (checkBit << 23) + w;
+		},
+		isCodeword: function (w){
+			let syndromeCheck = weight(w) % 2;
+			let syndromeBase = codes.Golay.computeSyndrome(w & LAST_TWENTY_THREE_BITS);
+			return (syndromeCheck === 0) && (syndromeBase === 0);
+		},
+		correct: function(w){
+			
+		},
+		decode: function(w){
+			// Same as codes.Golay.decode
+			return w & LAST_TWELVE_BITS;
+		}
 	}
 }
 
