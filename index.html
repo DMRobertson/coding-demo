@@ -56,7 +56,8 @@
 					<label for="uncoded_bit_error_distribution" title="Without using a code, pixels are represented with a 24-bit binary string. Maybe no bits incur errors; maybe only two do; maybe 23 of our 24 total bits incur errors! It all depends on the channel error rate. The distribution of bit errors is shown below.">Bit errors per pixel (uncoded)</label>
 					<br />
 					mean: <output id="uncoded_bit_error_distribution_mean"></output>,
-					mode: <output id="uncoded_bit_error_distribution_mode"></output>
+					mode: <output id="uncoded_bit_error_distribution_mode"></output><br />
+					Probability of ≥ 1 error: <output id="uncoded_bit_error_distribution_error_probability"></output>
 				</header>
 			</output>
 		</fieldset>
@@ -127,7 +128,7 @@
 			
 			<hr />
 			
-			<input id="smooth_scaling" type="checkbox" checked> <label for="smooth_scaling">Smooth image scaling  </label> <br />
+			<input id="smooth_scaling" type="checkbox"> <label for="smooth_scaling">Smooth image scaling  </label> <br />
 		</fieldset>
 	</footer>
 	<article id="info" class="hidden">

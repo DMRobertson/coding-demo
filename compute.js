@@ -36,6 +36,7 @@ for (let i = 11; i < 23; i++){
 }
 
 const GolaySyndromeTable = [
+	// These are just the rows of P in the opposite order!?
 	0b01011100011,
 	0b10111000110,
 	0b00101101111, 
@@ -284,6 +285,7 @@ const codes = {
 					return lcycle(u, 12, 23);
 				}
 			}
+			// Everything above here seems very similar to http://www.mcs.csueastbay.edu/~malek/Class/Golay.pdf . Perhaps the last case below is the new part of the authors' work?
 			// 10.
 			let rdashed = r ^ 0b1;
 			let dashedSyn = syn ^ GolaySyndromeTable[0];

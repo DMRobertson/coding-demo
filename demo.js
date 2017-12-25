@@ -403,6 +403,7 @@ function errorProbabilityMoved(e){
 	}
 	document.getElementById('uncoded_bit_error_distribution_mean').innerText = (24 * p).toFixed(1);
 	document.getElementById('uncoded_bit_error_distribution_mode').innerText = mode.toString();
+	document.getElementById('uncoded_bit_error_distribution_error_probability').innerText = formatPercentage(1 - masses[0], 1);
 	modelTransmission();
 }
 
@@ -459,7 +460,7 @@ function codeChanged(e){
 }
 
 function smoothScalingToggled(e){
-	document.body.classList.toggle("no-canvas-scaling");
+	document.body.classList.toggle("no-canvas-scaling", !this.checked);
 }
 
 function checkForHelp(e){
@@ -542,8 +543,9 @@ function main(){
 	code_selector.addEventListener("change", codeChanged);
 	codeChanged.call(code_selector);
 	
-	document.getElementById('smooth_scaling').addEventListener('click', smoothScalingToggled);
-	
+	let smoothScaling = document.getElementById('smooth_scaling');
+	smoothScaling.addEventListener('click', smoothScalingToggled);
+	smoothScalingToggled.call(smoothScaling);
 	document.addEventListener('click', checkForHelp);
 	document.getElementById('close').addEventListener('click', closeInfoBox);
 }
