@@ -1,0 +1,29 @@
+body {
+	flex-direction: column;
+}
+
+#canvases {
+	flex-direction: row;
+	overflow-x: scroll;
+}
+
+#Alice span {display: none;}
+
+#canvases > * {
+	width: calc(99.5% - 8px);
+	margin-right: 8px;
+}
+
+footer {
+	max-height: 33%;
+	overflow-y: scroll;
+}
+
+footer fieldset:not(:last-child) {
+	margin-bottom: 1em;
+}
+
+/* Infobox tooltips */
+blockquote {
+	margin: 1em 1.5em;
+}

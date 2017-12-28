@@ -1,0 +1,19 @@
+body > main > *, footer > *{
+	width: 32%;
+}
+
+body > main > * {
+	flex-grow: 1;
+	
+}
+
+footer {
+	display: flex;
+	flex-shrink: 0;
+}
+
+/* Histogram */
+#uncoded_bit_error_distribution div {
+	transition: height 0.1s;
+}
+
