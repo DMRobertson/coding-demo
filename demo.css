@@ -31,8 +31,10 @@ body {
 }
 
 footer { 
-	background: #eee;
-	padding: 8px;
+	background: #f1f9fe;
+	border-top: 4px solid #708189;
+	border-radius: 10px;
+	padding: 6px 8px 8px 8px;
 }
 
 /* The three image displays */
@@ -41,7 +43,7 @@ footer {
 	padding: 4px;
 	background: #f6f6f6;
 	flex-shrink: 0;
-	transition: opacity, color, background-color, border-color, ease-in-out 0.1s;
+	transition: color, background-color, border-color, ease-in-out 0.1s;
 	
 	display: flex;
 	flex-direction: column;
@@ -120,13 +122,14 @@ main aside output {
 
 /* The footer contains settings and statistics */
 footer fieldset {
-	padding: 0;
+	padding: 0 9px; /* 4px is the smallest unit of padding, 1px+4px from border+padding of #canvases > * */
 	border: 0;
+	margin: 0;
 	line-height: 1.4;
 }
 
 footer h3 {
-	margin: 1ex 0;
+	margin: 0.8ex 0;
 }
 
 #error_probability {
