@@ -56,7 +56,8 @@
 					<label for="uncoded_bit_error_distribution" title="Without using a code, pixels are represented with a 24-bit binary string. Maybe no bits incur errors; maybe only two do; maybe 23 of our 24 total bits incur errors! It all depends on the channel error rate. The distribution of bit errors is shown below.">Bit errors per pixel (uncoded)</label>
 					<br />
 					mean: <output id="uncoded_bit_error_distribution_mean"></output>,
-					mode: <output id="uncoded_bit_error_distribution_mode"></output>
+					mode: <output id="uncoded_bit_error_distribution_mode"></output><br />
+					Probability of ≥ 1 error: <output id="uncoded_bit_error_distribution_error_probability"></output>
 				</header>
 			</output>
 		</fieldset>
@@ -73,7 +74,8 @@
 					<option value="rep4x"    >fourfold repetition</option>
 					<option value="Ham(3)"   >Hamming [7, 4]</option>
 					<option value="Ham+(3)"  >Extended Hamming [7, 4]</option>
-					<!--<option label="binary Golay"           value="Golay2x"  >
+					<option value="Golay"    >binary Golay</option>
+					<!--
 					<option label="extended binary Golay"   value="Golay+2x" >
 					<option label="parity-check extension" value="check1"   >
 					-->
@@ -126,7 +128,8 @@
 			
 			<hr />
 			
-			<input id="smooth_scaling" type="checkbox" checked> <label for="smooth_scaling">Smooth image scaling  </label> <br />
+			<input id="smooth_scaling" type="checkbox"> <label for="smooth_scaling">Smooth image scaling  </label> <br />
+			<span id="about_anchor" title="The idea came to me from a figure in MacKay's book on information theory. Click this link to show a bibliographic reference and more details on the application itself.">About this application</span>
 		</fieldset>
 	</footer>
 	<article id="info" class="hidden">
@@ -136,6 +139,15 @@
 		<main>
 			
 		</main>
+		<section id="about">
+			<p>This is a small Javascript toy to illustrate the idea behind (<a href="https://en.wikipedia.org/wiki/Error_detection_and_correction">channel</a>) <a href="https://en.wikipedia.org/wiki/Coding_theory">coding theory</a>. Users can submit an image, and see the effect on the transmitted image of varying the channel error rate <var>p</var> on the image. Everything is computed client side. I've only had the time to test this in Chrome 63, but I think recent versions of Firefox and Safari should be okay too. The source code is <a href="https://github.com/DMRobertson/coding-demo">on GitHub</a>.</p>
+			
+			<p>I took the idea from MacKay's book</p>
+				<blockquote>
+					MacKay, David J.C. <em><a href="http://www.cambridge.org/gb/academic/subjects/computer-science/pattern-recognition-and-machine-learning/information-theory-inference-and-learning-algorithms?format=HB&isbn=9780521642989#u22fCX0eDcCDOZTm.97">Information Theory, Inference, and Learning Algorithms</a>.</em> Cambridge University Press, <time datetime="2003">2003</time>. xii+628&nbsp;pp. ISBN: <a href="https://isbnsearch.org/isbn/9780521642989">978-0-521-64298-9</a>. MR: <a href="https://mathscinet.ams.org/mathscinet-getitem?mr=2012999">2012999</a>. <a href="http://www.inference.org.uk/itila/">Available online</a>.
+					</blockquote>
+			<p>in which (e.g. Figures 1.5, 47.5) he visualises the effect of a noisy channel by randomly adjusting bits in a 100x100 1-bit image of a panel from a Dilbert comic.</p>
+		</section>
 		<button id="close">Close</button>
 	</article>
 </body>

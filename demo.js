@@ -52,7 +52,7 @@ class WorkerPool {
 		this.callback = this.request[1];
 		this.request = null;
 		
-		for (var i = 0; i < 4; i++){
+		for (let i = 0; i < 4; i++){
 			let payload = payloadFactory(i);
 			payload.workerId = i;
 			this.workers[i].postMessage(payload);
@@ -331,12 +331,12 @@ let settingsTemplate = {
 		dimension: 4,
 		encodedUnitBits: 8
 	},
-	"Golay2x": {
+	"Golay": {
 		minimumDistance: 7,
 		dimension: 12,
 		encodedUnitBits: 23
 	},
-	"Golay+2x": {
+	"Golay+": {
 		minimumDistance: 8,
 		dimension: 12,
 		encodedUnitBits: 24,
@@ -403,6 +403,7 @@ function errorProbabilityMoved(e){
 	}
 	document.getElementById('uncoded_bit_error_distribution_mean').innerText = (24 * p).toFixed(1);
 	document.getElementById('uncoded_bit_error_distribution_mode').innerText = mode.toString();
+	document.getElementById('uncoded_bit_error_distribution_error_probability').innerText = formatPercentage(1 - masses[0], 1);
 	modelTransmission();
 }
 
@@ -439,10 +440,10 @@ function createHistogram(){
 
 function codeChanged(e){
 	let settings = getSettings();	
-	var dimension = settings.dimension;
-	var wordLength = settings.encodedUnitBits;
-	var infRate = formatPercentage(dimension, wordLength);
-	var unitsPerPixel = settings.unitsPerPixel;
+	let dimension = settings.dimension;
+	let wordLength = settings.encodedUnitBits;
+	let infRate = formatPercentage(dimension, wordLength);
+	let unitsPerPixel = settings.unitsPerPixel;
 	let d = settings.minimumDistance;
 	let s = d - 1;
 	let t = Math.floor( (d - 1)/2 );
@@ -459,7 +460,7 @@ function codeChanged(e){
 }
 
 function smoothScalingToggled(e){
-	document.body.classList.toggle("no-canvas-scaling");
+	document.body.classList.toggle("no-canvas-scaling", !this.checked);
 }
 
 function checkForHelp(e){
@@ -481,12 +482,19 @@ function checkForHelp(e){
 	if (infoSource === null){
 		return;
 	}
+	let info = document.getElementById('info');
 	// Does the display already contain the right information?
-	if (info.dataset.titleOf == infoId){
+	if (info.dataset.titleOf === infoId){
 		info.classList.toggle('hidden');
 		return;
 	}
-	// Need new help to be displayed.
+	// Need new help to be displayed
+	// Record which element we're showing the information for
+	info.dataset.titleOf = infoId;
+	info.classList.remove("hidden");
+	// Special case: for the "about" anchor, toggle the visibility of the about container
+	info.classList.toggle("show_about", infoId === "about_anchor");
+	
 	// Remove the info display's current contents
 	let infoTextHolder = info.getElementsByTagName('main')[0];
 	while (infoTextHolder.lastChild) {
@@ -495,7 +503,7 @@ function checkForHelp(e){
 	
 	// Add the target's title text to the info display
 	let paragraphs = infoSource.getAttribute('title').split('\n');
-	for (var i = 0; i < paragraphs.length; i++){
+	for (let i = 0; i < paragraphs.length; i++){
 		let text = paragraphs[i].trim();
 		if (text.length === 0){
 			continue;
@@ -505,9 +513,6 @@ function checkForHelp(e){
 		para.innerHTML = text.replace(/\$([^$]*)\$/g, '<var>$1</var>')
 		infoTextHolder.appendChild(para);
 	}
-	// Record which element we're showing the information for
-	info.dataset.titleOf = infoId;
-	info.classList.remove("hidden");
 }
 
 function closeInfoBox(e){
@@ -542,8 +547,9 @@ function main(){
 	code_selector.addEventListener("change", codeChanged);
 	codeChanged.call(code_selector);
 	
-	document.getElementById('smooth_scaling').addEventListener('click', smoothScalingToggled);
-	
+	let smoothScaling = document.getElementById('smooth_scaling');
+	smoothScaling.addEventListener('click', smoothScalingToggled);
+	smoothScalingToggled.call(smoothScaling);
 	document.addEventListener('click', checkForHelp);
 	document.getElementById('close').addEventListener('click', closeInfoBox);
 }

@@ -5,6 +5,58 @@ const LAST_NIBBLE     = 0b00001111;
 const FIRST_NIBBLE    = 0b11110000;
 const LAST_SEVEN_BITS = 0b01111111;
 const LAST_BYTE       = 0b11111111;
+const LAST_TWELVE_BITS = 0b111111111111; // (1 << 12) - 1
+const LAST_TWENTY_THREE_BITS = 0b11111111111111111111111; // (1 << 23) - 1
+
+const GolayPRows = [
+	0b10101110001,
+	0b11111001001,
+	0b11010010101,
+	0b11000111011,
+	0b11001101100,
+	0b01100110110,
+	0b00110011011,
+	0b10110111100,
+	0b01011011110,
+	0b00101101111,
+	0b10111000110,
+	0b01011100011,
+];
+const GolayGenRows = new Array(12);
+for (let i = 0; i < 12; i++){
+	GolayGenRows[i] = (GolayPRows[i] << 12) + (1 << (12 - i - 1));
+}
+
+const GolayCheckCols = new Array(23);
+for (let i = 0; i < 11; i++){
+	GolayCheckCols[i] = 1 << (10 - i);
+}
+for (let i = 11; i < 23; i++){
+	GolayCheckCols[i] = GolayPRows[i - 11];
+}
+
+const GolaySyndromeTable = [
+	// These are just the rows of P in the opposite order!?
+	0b01011100011,
+	0b10111000110,
+	0b00101101111, 
+	0b01011011110,
+	0b10110111100,
+	0b00110011011,
+	0b01100110110, 
+	0b11001101100,
+	0b11000111011,
+	0b11010010101,
+	0b11111001001,
+	0b10101110001, 
+];
+
+function lcycle(word, shift, length){
+	let mask = (1 << length) - 1;
+	let lpart = (word << shift) & mask;
+	let rpart = word >> (length - shift);
+	return lpart | rpart;
+}
 
 const codes = {
 	"rep2x": {
@@ -103,14 +155,15 @@ const codes = {
 			return (w1 << 6) + (w2 << 5) + (w3 << 4) + x;
 		},
 		isCodeword: function(w){
-			return this.compute_syndrome(w) === 0;
+			return this.computeSyndrome(w) === 0;
 		},
-		compute_syndrome(w){
+		computeSyndrome(w){
 			/* A corresponding parity-check matrix is
 				100|1101
 				010|1011
 				001|0111
 			*/
+			// TODO: is this clearer/more efficient using the approach in Golay encode?
 			let w1 = (w >> 6) & LAST_BIT;
 			let w2 = (w >> 5) & LAST_BIT;
 			let w3 = (w >> 4) & LAST_BIT;
@@ -125,7 +178,7 @@ const codes = {
 			return (s1 << 2) + (s2 << 1) + (s3 << 0);
 		},
 		correct: function(w){
-			let syndrome = this.compute_syndrome(w);
+			let syndrome = this.computeSyndrome(w);
 			// which column in H contains the binary expansion of i?
 			if (syndrome !== 0){
 				const indices = [3, 2, 6, 1, 5, 4, 7];
@@ -146,12 +199,12 @@ const codes = {
 		},
 		isCodeword(w){
 			let syndromeCheck = weight(w) % 2;
-			let syndromeBase = codes["Ham(3)"].compute_syndrome(w & LAST_SEVEN_BITS);
+			let syndromeBase = codes["Ham(3)"].computeSyndrome(w & LAST_SEVEN_BITS);
 			return (syndromeCheck === 0) && (syndromeBase === 0);
 		},
 		correct: function(w){
 			let syndromeCheck = weight(w) % 2;
-			let syndromeBase = codes["Ham(3)"].compute_syndrome(w);
+			let syndromeBase = codes["Ham(3)"].computeSyndrome(w);
 			if (syndromeCheck !== 0){
 				let checkBit = 1 << 7;
 				if (syndromeBase === 0){
@@ -163,9 +216,117 @@ const codes = {
 			return w;
 		},
 		decode: function(w){
+			// same as codes["Ham(3)"].decode
 			return w & LAST_NIBBLE;
 		}
 	},
+	"Golay": {
+		// Following the scheme of http://www.sciencedirect.com/science/article/pii/S1665642313715438
+		encode: function(x){
+			let w = 0;
+			let mask = 1;
+			for (let i = 0; i < GolayGenRows.length; i++){
+				if (x & mask){
+					w ^= GolayGenRows[GolayGenRows.length - i - 1];
+				}
+				mask <<= 1;
+			}
+			return w;
+		},
+		isCodeword: function (w){
+			return this.computeSyndrome(w) === 0;
+		},
+		computeSyndrome: function (w){
+			let syn = 0;
+			let mask = 1;
+			for (let i = 0; i < GolayCheckCols.length; i++){
+				if (w & mask) {
+					syn ^= GolayCheckCols[GolayCheckCols.length - i - 1];
+				}
+				mask <<= 1;
+			}
+			return syn;
+		},
+		correct: function(r){
+			// See the fourth section of https://www.sciencedirect.com/science/article/pii/S1665642313715438
+			// 2.
+			let syn = this.computeSyndrome(r);
+			let synWeight = weight(syn);
+			// 3.
+			if (synWeight <= 3){
+				// Their bitwise subtraction is bitwise addition, i.e. XOR ^
+				return r ^ (syn << 12);
+			}
+			// 4.
+			for (let i = 0; i < GolaySyndromeTable.length; i++){
+				let synDiff = syn ^ GolaySyndromeTable[i];
+				// 5.
+				if (weight(synDiff) <= 2){
+					return r ^ (synDiff << 12) ^ (1 << i);
+				}
+			}
+			// 6.
+			let rcycled = lcycle(r, 11, 23);
+			let cycledSyn = this.computeSyndrome(rcycled);
+			let cycledSynWeight = weight(cycledSyn);
+			// 7.
+			if (cycledSynWeight === 2 || cycledSynWeight === 3){
+				// the formula they give seems to just be a cyclic shift
+				return lcycle(rcycled ^ (cycledSyn << 12), 12, 23)
+			}
+			// 8.
+			for (let i = 0; i < 12; i++){
+				let cycledSynDiff = cycledSyn ^ GolaySyndromeTable[i];
+				let cycledSynDiffWeight = weight(cycledSynDiff);
+				// 9.
+				if (cycledSynDiffWeight === 1 || cycledSynDiffWeight == 2){
+					// again, the formula they give seems to just be a cyclic shift
+					let u = rcycled ^ (cycledSynDiff << 12) ^ (1 << i);
+					return lcycle(u, 12, 23);
+				}
+			}
+			// Everything above here seems very similar to http://www.mcs.csueastbay.edu/~malek/Class/Golay.pdf . Perhaps the last case below is the new part of the authors' work?
+			// 10.
+			let rdashed = r ^ 0b1;
+			let dashedSyn = syn ^ GolaySyndromeTable[0];
+			// 11.
+			for (let i = 1; i < 12; i++){
+				let dashedSynDiff = dashedSyn ^ GolaySyndromeTable[i];
+				if ( weight(dashedSynDiff) === 1 ){
+					return rdashed ^ (dashedSynDiff << 12) ^ (1 << i);
+				}
+			}
+			// 13. Shouldn't get here.
+			// console.assert(false, r);
+		},
+		decode: function(w){
+			return w & LAST_TWELVE_BITS;
+		},
+	},
+	"Golay+": {
+		encode: function(x){
+			let w = codes.Golay.encode(x);
+			let checkBit = weight(w) % 2;
+			return (checkBit << 23) + w;
+		},
+		isCodeword: function (w){
+			let syndromeCheck = weight(w) % 2;
+			let syndromeBase = codes.Golay.computeSyndrome(w & LAST_TWENTY_THREE_BITS);
+			return (syndromeCheck === 0) && (syndromeBase === 0);
+		},
+		correct: function(w){
+			let syndromeCheck = weight(w) % 2;
+			if (syndromeCheck === 0){
+				// assume that either 0, 2 or 4 errors have occurred to the whole word
+			} else {
+				// assume that either 1 or 3 errors have occured to the whole word.
+			}
+		},
+		decode: function(w){
+			// Same as codes.Golay.decode
+			return w & LAST_TWELVE_BITS;
+		}
+	}
 }
 
 function randomErrorPattern(rate, bitlength){
@@ -210,6 +371,9 @@ function simulateTransmission(p){
 			var encoder = encodePixelByByte;
 			var decoder = decodePixelToBytes;
 			break;
+		case 12:
+			var encoder = encodePixelBy12Bits;
+			var decoder = decodePixelTo12Bits;
 	}
 	// Loop over each pixel
 	for (
@@ -311,7 +475,6 @@ function encodePixelByNibbles(p, rawIndex, encodedIndex){
 }
 
 function decodePixelToNibbles(p, rawIndex, encodedIndex){
-	let decodedPixelError = false;
 	for (let j = 0; j < 3; j++) {
 		p.decoded[rawIndex + j] = (
 			( p.settings.code.decode(p.encoded[encodedIndex + 2*j]) << 4 )
@@ -320,6 +483,21 @@ function decodePixelToNibbles(p, rawIndex, encodedIndex){
 	}
 }
 
+function encodePixelBy12Bits(p, rawIndex, encodedIndex){
+	let r = p.raw[rawIndex];
+	let g = p.raw[rawIndex + 1];
+	let b = p.raw[rawIndex + 2];
+	p.encoded[encodedIndex]     = p.settings.code.encode( (r << 4) + (g >>> 4) );
+	p.encoded[encodedIndex + 1] = p.settings.code.encode( ((g & LAST_NIBBLE) << 8) + b );
+}
+
+function decodePixelTo12Bits(p, rawIndex, encodedIndex){
+	let w1 = p.settings.code.decode(p.encoded[encodedIndex]);
+	let w2 = p.settings.code.decode(p.encoded[encodedIndex + 1]);
+	p.decoded[rawIndex] = w1 >> 4;
+	p.decoded[rawIndex + 1] = ((w1 & LAST_NIBBLE) << 4) + (w2 >> 8);
+	p.decoded[rawIndex + 2] = w2 & LAST_BYTE;
+}
 
 onmessage = function(e){
 	let p = e.data; // payload
