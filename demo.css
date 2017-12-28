@@ -200,9 +200,21 @@ footer fieldset {
 	font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
 
-#info main {
+#info main, #info #about {
 	overflow: auto;
 	padding-right: 8px;
+}
+
+#info #about {
+	display: none;
+}
+
+#info.show_about #about {
+	display: block;
+}
+
+#info.show_about main {
+	display: none;
 }
 
 #close {

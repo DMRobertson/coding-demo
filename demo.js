@@ -482,12 +482,19 @@ function checkForHelp(e){
 	if (infoSource === null){
 		return;
 	}
+	let info = document.getElementById('info');
 	// Does the display already contain the right information?
-	if (info.dataset.titleOf == infoId){
+	if (info.dataset.titleOf === infoId){
 		info.classList.toggle('hidden');
 		return;
 	}
-	// Need new help to be displayed.
+	// Need new help to be displayed
+	// Record which element we're showing the information for
+	info.dataset.titleOf = infoId;
+	info.classList.remove("hidden");
+	// Special case: for the "about" anchor, toggle the visibility of the about container
+	info.classList.toggle("show_about", infoId === "about_anchor");
+	
 	// Remove the info display's current contents
 	let infoTextHolder = info.getElementsByTagName('main')[0];
 	while (infoTextHolder.lastChild) {
@@ -506,9 +513,6 @@ function checkForHelp(e){
 		para.innerHTML = text.replace(/\$([^$]*)\$/g, '<var>$1</var>')
 		infoTextHolder.appendChild(para);
 	}
-	// Record which element we're showing the information for
-	info.dataset.titleOf = infoId;
-	info.classList.remove("hidden");
 }
 
 function closeInfoBox(e){

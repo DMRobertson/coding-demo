@@ -1,9 +1,9 @@
 TODO (apart from make the thing work)
-	* Acknowledge David McKay's book (Garfield pictures) for the idea
 	* On hover of middle and right canvases, show wrong pixels in white and right pixels in black. Maybe use the value of pixel to indicate the size of the error? (An option)
 	* Store settings with a cookie?
-	* Fork me on github
 	* Add in the remaining codes
 	* Compute the diffs (in main thread) on mouse enter and leave;
 	* Or compute the diffs in workers?
 	* Lower the bits per pixel as an option?
+	* Better UI on mobiles?
+	* Maybe it should display the number of bits which go through correctly? (The problem I'm getting at hear is that the application doesn't distinguish between low-significance and high-significance bit errors. 2 -> 3 and 2 -> 130 are both 1 bit errors in bytes, but they'll rapdily distort the image.)
