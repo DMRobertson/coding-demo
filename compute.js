@@ -315,7 +315,12 @@ const codes = {
 			return (syndromeCheck === 0) && (syndromeBase === 0);
 		},
 		correct: function(w){
-			
+			let syndromeCheck = weight(w) % 2;
+			if (syndromeCheck === 0){
+				// assume that either 0, 2 or 4 errors have occurred to the whole word
+			} else {
+				// assume that either 1 or 3 errors have occured to the whole word.
+			}
 		},
 		decode: function(w){
 			// Same as codes.Golay.decode
