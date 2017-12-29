@@ -18,6 +18,11 @@ body {
 }
 
 /* Histogram */
+
+#uncoded_bit_error_distribution {
+	height: 112px;
+}
+
 #uncoded_bit_error_distribution div {
 	transition: height 0.1s;
 }

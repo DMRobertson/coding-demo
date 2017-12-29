@@ -7,7 +7,7 @@ body {
 	font-family: sans-serif;
 	margin: 0;
 	user-select: none;
-	background: white;
+	background: #fbfdfe;
 	transition:	background-color 0.5s;
 	height: 100vh;
 	box-sizing: border-box;
@@ -30,11 +30,14 @@ body {
 	display: flex;
 }
 
-footer { 
+footer {
 	background: #f1f9fe;
-	border-top: 4px solid #708189;
+	border-color: #5f889b;
+	border-style: solid;
+	border-width: 4px 0 0 0;
 	border-radius: 10px;
 	padding: 6px 8px 8px 8px;
+	flex-shrink: 0;
 }
 
 /* The three image displays */
@@ -42,7 +45,6 @@ footer {
 	border: 1px solid #ccc;
 	padding: 4px;
 	background: #f6f6f6;
-	flex-shrink: 0;
 	transition: color, background-color, border-color, ease-in-out 0.1s;
 	
 	display: flex;
@@ -129,6 +131,10 @@ footer fieldset {
 }
 
 footer h3 {
+	margin: 1em 0 0.8ex 0;
+}
+
+footer h3:first-child {
 	margin: 0.8ex 0;
 }
 
@@ -176,7 +182,6 @@ footer h3 {
 	border-radius: 0 0 10px 10px;
 	box-shadow: 0 2px 15px black;
 	min-height: 8ex;
-	
 	display: flex;
 	align-items: flex-start;
 }
@@ -189,6 +194,7 @@ footer h3 {
 	flex-grow: 1;
 	overflow-y: auto;
 	padding: 4px 8px;
+	max-height: calc(50% - 24px);
 }
 
 #info p:first-child { margin-top: 0; }

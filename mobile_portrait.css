@@ -12,6 +12,7 @@ body {
 #canvases > * {
 	width: calc(99.5% - 8px);
 	margin-right: 8px;
+	flex-shrink: 0;
 }
 
 footer {
