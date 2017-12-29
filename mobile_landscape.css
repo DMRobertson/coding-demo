@@ -20,7 +20,7 @@ span.mobile { display: inline; }
 footer {
 	border-top: none;
 	border-width: 0 0 0 4px;
-	width: 45%;
+	width: 350px;
 	overflow-y: scroll;
 }
 
