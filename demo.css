@@ -67,7 +67,7 @@ canvas {
 }
 
 /* #Alice can be clicked to upload a file */
-#Alice:hover {
+#Alice:hover, .mid_drag #Alice {
 	cursor: pointer;
 	color: red;
 	border-color: red;

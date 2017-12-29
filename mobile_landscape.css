@@ -1,3 +1,7 @@
+body {
+	touch-action: manipulation;
+}
+
 span.mobile { display: inline; }
 
 #canvases {
