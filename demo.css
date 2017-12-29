@@ -182,8 +182,8 @@ footer h3:first-child {
 	border-radius: 0 0 10px 10px;
 	box-shadow: 0 2px 15px black;
 	min-height: 8ex;
+	
 	display: flex;
-	align-items: flex-start;
 }
 
 .emoji {
@@ -219,6 +219,7 @@ footer h3:first-child {
 	background: none;
 	padding: 0;
 	border: 1px solid transparent;
+	align-self: flex-start;
 }
 
 #close:hover {
