@@ -2,6 +2,8 @@ body {
 	flex-direction: column;
 }
 
+span.desktop { display: inline; }
+
 #canvases, footer {
 	display: flex;
 	justify-content: space-between;

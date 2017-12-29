@@ -1,8 +1,10 @@
-/* Main page setup */
 .hidden {
 	display: none !important;
 }
 
+span.mobile, span.desktop { display: none; }
+
+/* Main page setup */
 body {
 	font-family: sans-serif;
 	margin: 0;

@@ -2,12 +2,12 @@ body {
 	flex-direction: column;
 }
 
+span.mobile { display: inline; }
+
 #canvases {
 	flex-direction: row;
 	overflow-x: scroll;
 }
-
-#Alice span {display: none;}
 
 #canvases > * {
 	width: calc(99.5% - 8px);

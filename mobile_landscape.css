@@ -1,3 +1,5 @@
+span.mobile { display: inline; }
+
 #canvases {
 	flex-direction: row;
 	flex-wrap: wrap;
