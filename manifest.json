@@ -1,0 +1,20 @@
+{
+	"background_color": "#fbfdfe",
+	"description": "A toy application to simulate the effect of applying noise to an image and then attempting to retrieve the original image. It's meant to show off a little bit of (error-correcting) coding theory.",
+	"dir": "ltr",
+	"display": "standalone",
+	"icons": [
+		{"src": "icons/512.png", "type": "image/png", "sizes": "512x512" },
+		{"src": "icons/256.png", "type": "image/png", "sizes": "256x256" },
+		{"src": "icons/192.png", "type": "image/png", "sizes": "192x192" },
+		{"src": "icons/144.png", "type": "image/png", "sizes": "144x144" },
+		{"src": "icons/96.png", "type": "image/png", "sizes": "96x96" },
+		{"src": "icons/64.png", "type": "image/png", "sizes": "64x64" }
+	],
+	"lang": "en-GB",
+	"name": "Coding theory demo",
+	"scope": "./",
+	"short_name": "Coding demo",
+	"start_url": "./",
+	"theme_color": "#5f889b"
+}

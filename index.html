@@ -1,15 +1,24 @@
 <!doctype html>
-<html>
+<html lang="en-GB">
 <head>
 	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1">
 	<title>Coding theory demo</title>
+	<meta name="author" content="David Robertson">
+	<meta name="description" content="A toy application which visualises the effect of an error-correcting code.">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
 	<script defer src="demo.js"></script>
 	<link rel="stylesheet" type="text/css" href="demo.css" />
 	<link rel="stylesheet" type="text/css" href="mobile_portrait.css" media="(max-width: 600px)" />
 	<link rel="stylesheet" type="text/css" href="mobile_landscape.css" media="(min-width: 601px) and (max-height: 500px)" />
 	<link rel="stylesheet" type="text/css" href="tablet_portrait.css" media="(min-width: 601px) and (max-width: 850px) and (min-height: 501px)" />
 	<link rel="stylesheet" type="text/css" href="desktop.css" media="(min-width: 851px) and (min-height: 501px)" />
+	<!-- Wish the browsers would agree on this -->
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#5f889b">
+	<link rel="icon" href="icons/64.png" type="image/png">
+	<link rel="apple-touch-icon" href="icons/256.png" type="image/png">
+	<link rel="apple-touch-icon-startup" href="icons/256.png" type="image/png">
+	<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 	<main id="canvases">
