@@ -1,0 +1,33 @@
+span.mobile { display: inline; }
+
+#canvases {
+	flex-direction: row;
+	flex-wrap: wrap;
+	overflow-y: scroll;
+}
+
+#canvases > * {
+	margin-bottom: 8px;
+	flex-shrink: 0;
+	width: calc(100% - 16px);
+	height: calc(100% - 12px);
+}
+
+#canvases > *:last-child {
+	margin-bottom: 0;
+}
+
+footer {
+	border-top: none;
+	border-width: 0 0 0 4px;
+	width: 45%;
+	overflow-y: scroll;
+}
+
+footer fieldset {
+	margin-bottom: 2.5em;
+}
+
+footer fieldset:last-child {
+	margin-bottom: 0;
+}

@@ -1,0 +1,30 @@
+body {
+	flex-direction: column;
+}
+
+span.mobile { display: inline; }
+
+#canvases {
+	flex-direction: row;
+	overflow-x: scroll;
+}
+
+#canvases > * {
+	width: calc(99.5% - 8px);
+	margin-right: 8px;
+	flex-shrink: 0;
+}
+
+footer {
+	max-height: 33%;
+	overflow-y: scroll;
+}
+
+footer fieldset:not(:last-child) {
+	margin-bottom: 1em;
+}
+
+/* Infobox tooltips */
+blockquote {
+	margin: 1em 1.5em;
+}

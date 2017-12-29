@@ -497,7 +497,8 @@ function checkForHelp(e){
 	
 	// Remove the info display's current contents
 	let infoTextHolder = info.getElementsByTagName('main')[0];
-	while (infoTextHolder.lastChild) {
+	// Keep the info icon, which we assume is the first element
+	while (infoTextHolder.childElementCount > 1) {
 		infoTextHolder.removeChild(infoTextHolder.lastChild);
 	}
 	

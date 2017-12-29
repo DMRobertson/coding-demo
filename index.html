@@ -2,16 +2,21 @@
 <html>
 <head>
 	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1">
 	<title>Coding theory demo</title>
 	<script defer src="demo.js"></script>
 	<link rel="stylesheet" type="text/css" href="demo.css" />
+	<link rel="stylesheet" type="text/css" href="mobile_portrait.css"  media="(max-width: 425px)" />
+	<link rel="stylesheet" type="text/css" href="mobile_landscape.css"  media="(max-width: 768px) and (orientation: landscape)" />
+	<link rel="stylesheet" type="text/css" href="tablet_portrait.css"  media="(min-width: 426px) and (max-width: 768px) and (orientation: portrait)" />
+	<link rel="stylesheet" type="text/css" href="desktop.css" media="(min-width: 769px)" />
 </head>
 <body>
-	<main>
+	<main id="canvases">
 		<label id="Alice" for="get_image">
 			<canvas id="sent" width="0" height="0"></canvas>
 			<input id="get_image" type="file" accept="image/*">
-			<p><strong>Choose a file</strong> or drag it to the page.</p>
+			<p><strong>Click <span class="desktop">or drag</span> to choose a file</strong><span class="mobile">, then scroll</span>.</p>
 		</label>
 		<section id="Bob">
 			<aside>
@@ -31,7 +36,7 @@
 			</aside>
 			<canvas id="decoded"></canvas>
 			<canvas id="decoded_diff" class="diff"></canvas>
-			<p id="Bob_decoded_caption "title="The simulated result of Bob decoding Alice's image is displayed here. Hover over the canvas to see the difference between Alice's source image and Bob's (coded) received image.">After correction <strong>using</strong> a code</p>
+			<p id="Bob_decoded_caption" title="The simulated result of Bob decoding Alice's image is displayed here. Hover over the canvas to see the difference between Alice's source image and Bob's (coded) received image.">After correction <strong>using</strong> a code</p>
 		</section>
 	</main>
 	<footer>
@@ -43,13 +48,13 @@
 			This slider controls the value of $p$ in the definition of the binary symmetric channel.">Bit error rate</label>: <var>p</var> = <output for="error_probability"></output></h3>
 			<input id="error_probability" type="range" list="tickmarks" min="0" max="1" step="any" value="0.4641588833612779">
 			<datalist id="tickmarks">
-				<option data-target-value="0" label="0%">
-				<option data-target-value="0.01" label="1%">
-				<option data-target-value="0.1" label="10%">
-				<option data-target-value="0.25" label="25%">
-				<option data-target-value="0.5" label="50%">
-				<option data-target-value="0.75" label="75%">
-				<option data-target-value="1" label="100%">
+				<option data-target-value="0">0%</option>
+				<option data-target-value="0.01">1%</option>
+				<option data-target-value="0.1">10%</option>
+				<option data-target-value="0.25">25%</option>
+				<option data-target-value="0.5">50%</option>
+				<option data-target-value="0.75">75%</option>
+				<option data-target-value="1">100%</option>
 			</datalist>		
 			<output id="uncoded_bit_error_distribution">
 				<header>
@@ -126,20 +131,17 @@
 			<label for="correct_correction_rate" title="Of the errors we detected, how many of our attempts to correct recovered the original codeword?">
 			Correct corrections</label>: <output id="correct_correction_rate"></output><br />
 			
-			<hr />
-			
+			<h3 id="options">Options</h3>
 			<input id="smooth_scaling" type="checkbox"> <label for="smooth_scaling">Smooth image scaling  </label> <br />
 			<span id="about_anchor" title="The idea came to me from a figure in MacKay's book on information theory. Click this link to show a bibliographic reference and more details on the application itself.">About this application</span>
 		</fieldset>
 	</footer>
-	<article id="info" class="hidden">
-		<aside>
-			<span class="emoji">ℹ️</span>
-		</aside>
+	<aside id="info" class="hidden">
 		<main>
-			
+			<aside class="info_icon emoji">ℹ️</aside>
 		</main>
 		<section id="about">
+			<aside class="info_icon emoji">ℹ️</aside>
 			<p>This is a small Javascript toy to illustrate the idea behind (<a href="https://en.wikipedia.org/wiki/Error_detection_and_correction">channel</a>) <a href="https://en.wikipedia.org/wiki/Coding_theory">coding theory</a>. Users can submit an image, and see the effect on the transmitted image of varying the channel error rate <var>p</var> on the image. Everything is computed client side. I've only had the time to test this in Chrome 63, but I think recent versions of Firefox and Safari should be okay too. The source code is <a href="https://github.com/DMRobertson/coding-demo">on GitHub</a>.</p>
 			
 			<p>I took the idea from MacKay's book</p>
@@ -148,7 +150,7 @@
 					</blockquote>
 			<p>in which (e.g. Figures 1.5, 47.5) he visualises the effect of a noisy channel by randomly adjusting bits in a 100x100 1-bit image of a panel from a Dilbert comic.</p>
 		</section>
-		<button id="close">Close</button>
-	</article>
+		<button id="close" class="emoji">❌</button>
+	</aside>
 </body>
 </html>

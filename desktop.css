@@ -1,0 +1,30 @@
+body {
+	flex-direction: column;
+}
+
+span.desktop { display: inline; }
+
+#canvases, footer {
+	display: flex;
+	justify-content: space-between;
+}
+
+#canvases > *, footer fieldset {
+	flex-basis: 30%;
+	flex-grow: 1;
+	margin-right: 8px;
+}
+
+#canvases > *:last-child, footer fieldset:last-child {
+	margin-right: 0;
+}
+
+/* Histogram */
+
+#uncoded_bit_error_distribution {
+	height: 112px;
+}
+
+#uncoded_bit_error_distribution div {
+	transition: height 0.1s;
+}
