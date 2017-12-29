@@ -214,7 +214,18 @@ footer h3:first-child {
 	display: none;
 }
 
-#info_icon, #close {
+.info_icon {
+	font-size: 3.5ex;
+	float: left;
+	margin-right: 8px;
+	margin-bottom: 8px;
+}
+
+#info p:first-of-type {
+	margin-top: 0;
+}
+
+#close {
 	font-size: 3.5ex;
 	background: none;
 	padding: 0;

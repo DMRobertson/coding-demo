@@ -7,3 +7,4 @@ TODO (apart from make the thing work)
 	* Lower the bits per pixel as an option?
 	* Better UI on mobiles?
 	* Maybe it should display the number of bits which go through correctly? (The problem I'm getting at hear is that the application doesn't distinguish between low-significance and high-significance bit errors. 2 -> 3 and 2 -> 130 are both 1 bit errors in bytes, but they'll rapdily distort the image.)
+	* Mobile UI: add arrows to indicate that you need to swipe horizontally (vertically) in portait (landscape) mode?
