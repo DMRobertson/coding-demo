@@ -6,7 +6,7 @@ span.mobile, span.desktop { display: none; }
 
 /* Main page setup */
 body {
-	font-family: sans-serif;
+	font-family: "Roboto", "Droid Sans", "San Francisco", "Helvetica Neue", sans-serif;
 	margin: 0;
 	user-select: none;
 	background: #fbfdfe;
