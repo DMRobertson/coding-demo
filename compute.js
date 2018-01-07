@@ -505,5 +505,10 @@ onmessage = function(e){
 	settings.code = codes[settings.codeName];
 	let results = simulateTransmission(p, settings);
 	results.workerId = p.workerId;
-	postMessage(results);
+	if (!p.shared) {
+		results.rawSlice = p.raw;
+		results.encodedSlice = p.encoded;
+		results.decodedSlice = p.decoded;
+	}
+	postMessage(results, p.toTransfer);
 }
