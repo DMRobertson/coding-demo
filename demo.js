@@ -1,5 +1,7 @@
 "use strict"
 
+const NUMBER_OF_WORKERS = 4;
+
 class WorkerPool {
 	/* No idea what I'm doing here.
 	The intention was to make a system such that the workers only handle the most recent computation request.
@@ -7,9 +9,9 @@ class WorkerPool {
 	Hopefully the demo seems faster that way.
 	*/
 	constructor(){
-		this.workers = new Array(4);
+		this.workers = new Array(NUMBER_OF_WORKERS);
 		let handler = this.onCompletion.bind(this);
-		for (let i = 0; i < 4; i++){
+		for (let i = 0; i < NUMBER_OF_WORKERS; i++){
 			this.workers[i] = new Worker("compute.js");
 			this.workers[i].onmessage = handler;
 		}
@@ -17,7 +19,7 @@ class WorkerPool {
 		
 		this.computing = false;
 		this.completed = 0;
-		this.results = new Array(4);
+		this.results = new Array(NUMBER_OF_WORKERS);
 		this.callback = null;
 
 		this.numRequests = 0;
@@ -52,7 +54,7 @@ class WorkerPool {
 		this.callback = this.request[1];
 		this.request = null;
 		
-		for (let i = 0; i < 4; i++){
+		for (let i = 0; i < NUMBER_OF_WORKERS; i++){
 			let payload = payloadFactory(i);
 			payload.workerId = i;
 			this.workers[i].postMessage(payload);
@@ -62,12 +64,12 @@ class WorkerPool {
 	onCompletion(e){
 		this.completed += 1;
 		this.results[e.data.workerId] = e.data;
-		if (this.completed == 4){
+		if (this.completed == NUMBER_OF_WORKERS){
 			let instance = this;
 			requestAnimationFrame(function(timestamp){
 				instance.callback(instance.results);
 				instance.callback = null;
-				instance.results = new Array(4);
+				instance.results = new Array(NUMBER_OF_WORKERS);
 				instance.completedRequests += 1;
 				instance.computing = false;
 				instance.considerComputation();
@@ -182,16 +184,24 @@ function modelTransmission(){
 	// After modelling transmission, this will be decoded into an array of the same type and size.
 	let decoded = getUintArray(1, numPixels * 4);
 	/* Divide up these arrays into 4 blocks, approximately the same length. Each must have length a multiple of 4, or else we could have a situation where one block ends in the middle of describing a pixel (e.g. rg|ba). For example, if I have 9 pixels described by 36 bytes, the natural length for each block is 9 bytes. But the first block would read "rgbargbar", which is bad, so we round the block size down to the nearest multiple of 4, namely 8. Block sizes in bytes are then [8, 8, 8, 12].  */
-	let rawBlockSize = 4 * Math.floor(numPixels / 4);
-	let rawBlockIndices = [0, rawBlockSize, 2*rawBlockSize, 3*rawBlockSize, raw.length];
+	let rawBlockSize = NUMBER_OF_WORKERS * Math.floor(numPixels / NUMBER_OF_WORKERS);
+	let rawBlockIndices = new Array(NUMBER_OF_WORKERS + 1);
+	for (let i = 0; i < NUMBER_OF_WORKERS; i++){
+		rawBlockIndices[i] = rawBlockSize * i;
+	}
+	rawBlockIndices[NUMBER_OF_WORKERS] = raw.length;
 	
 	// Provide space for the encoded message
 	let encoded = getUintArray(settings.encodedUnitBytesStorage, numPixels * settings.unitsPerPixel);
 	/* Divide up the array into 4 blocks, approximately the same length. An array shouldn't end in the middle of a message unit. For example, if I have 9 pixels and it takes 3 message units to describe a pixel, the list of encoded message units should be 27 units long. I'd naturally want to divide this into blocks of size 27/4 = 6.75, but that wouldn't be kosher. So round it down to the nearest multiple of 3, namely 6. Block sizes in units are then [6, 6, 6, 9]. */
 	let numUnits = numPixels * settings.unitsPerPixel;
-	let encodedBlockIdealSize = numUnits / 4;
+	let encodedBlockIdealSize = numUnits / NUMBER_OF_WORKERS;
 	let encodedBlockSize = settings.unitsPerPixel * Math.floor(encodedBlockIdealSize / settings.unitsPerPixel);
-	let encodedBlockIndices = [0, encodedBlockSize, 2*encodedBlockSize, 3*encodedBlockSize, encoded.length];
+	let encodedBlockIndices = new Array(NUMBER_OF_WORKERS + 1);
+	for (let i = 0; i < NUMBER_OF_WORKERS; i++){
+		encodedBlockIndices[i] = encodedBlockSize * i;
+	}
+	encodedBlockIndices[NUMBER_OF_WORKERS] = encoded.length;
 
 	// Explain how to prepare information for the ith worker
 	function payloadFactory(i){
@@ -287,7 +297,7 @@ function getUintArray(encodedStorageSize, unitCount){
 		4: Uint32Array,
 	}
 	let specificType = arrayViewType[encodedStorageSize];
-	let buffer = new SharedArrayBuffer(specificType.BYTES_PER_ELEMENT * unitCount)
+	let buffer = new SharedArrayBuffer(specificType.BYTES_PER_ELEMENT * unitCount);
 	let view = new specificType(buffer);
 	return view;
 }
