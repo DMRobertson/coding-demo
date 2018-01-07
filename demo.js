@@ -1,6 +1,7 @@
 "use strict"
 
-const NUMBER_OF_WORKERS = window.SharedArrayBuffer? 4 : 1;
+const NUMBER_OF_WORKERS = 4;
+const SHARED = !!window.SharedArrayBuffer;
 
 class WorkerPool {
 	/* No idea what I'm doing here.
@@ -57,12 +58,7 @@ class WorkerPool {
 		for (let i = 0; i < NUMBER_OF_WORKERS; i++){
 			let payload = payloadFactory(i);
 			payload.workerId = i;
-			if (window.SharedArrayBuffer){
-				this.workers[i].postMessage(payload);
-			} else {
-				// Transfer buffers to single worker
-				this.workers[i].postMessage(payload, [payload.raw.buffer, payload.encoded.buffer, payload.decoded.buffer]);
-			}
+			this.workers[i].postMessage(payload, payload.toTransfer);
 		}
 	}
 	
@@ -208,28 +204,45 @@ function modelTransmission(){
 	}
 	encodedBlockIndices[NUMBER_OF_WORKERS] = encoded.length;
 
+	let payloadFactory;
 	// Explain how to prepare information for the ith worker
-	function payloadFactory(i){
-		return {
-			raw: raw,
-			decoded: decoded,
-			rawStart: rawBlockIndices[i],
-			rawEnd: rawBlockIndices[i+1],
-			encoded: encoded,
-			encodedStart: encodedBlockIndices[i],
-			encodedEnd: encodedBlockIndices[i+1],
-			settings: settings,
-			shared: !!window.SharedArrayBuffer
-		};
+	if (SHARED){
+		payloadFactory = function(i){
+			return {
+				raw: raw,
+				decoded: decoded,
+				rawStart: rawBlockIndices[i],
+				rawEnd: rawBlockIndices[i+1],
+				encoded: encoded,
+				encodedStart: encodedBlockIndices[i],
+				encodedEnd: encodedBlockIndices[i+1],
+				settings: settings,
+				shared: true,
+				toTransfer: [],
+			};
+		}
+	} else {
+		payloadFactory = function(i){
+			let rawSlice = raw.slice(rawBlockIndices[i], rawBlockIndices[i+1]);
+			let decodedSlice = decoded.slice(rawBlockIndices[i], rawBlockIndices[i+1]);
+			let encodedSlice = encoded.slice(encodedBlockIndices[i], encodedBlockIndices[i+1]);
+			return {
+				raw: rawSlice,
+				decoded: decodedSlice,
+				rawStart: 0,
+				rawEnd: rawSlice.length,
+				encoded: encodedSlice,
+				encodedStart: 0,
+				encodedEnd: encodedSlice.length,
+				settings: settings,
+				shared: false,
+				toTransfer: [rawSlice.buffer, decodedSlice.buffer, encodedSlice.buffer],
+			};
+		}
 	}
 	
 	function whenWorkersDone(results){
-		if (!window.SharedArrayBuffer){
-			raw = results[0].raw;
-			encoded = results[0].encoded;
-			decoded = results[0].decoded;
-		}
-		let output = assembleResults(results);
+		let output = assembleResults(results, raw, decoded);
 		// raw transmitted verbatim through the channel and now has errors applied
 		let w = imageData.width;
 		let h = imageData.height;
@@ -308,15 +321,25 @@ function getUintArray(encodedStorageSize, unitCount){
 		4: Uint32Array,
 	}
 	let specificType = arrayViewType[encodedStorageSize];
-	let arrayClass = window.SharedArrayBuffer ? window.SharedArrayBuffer : window.ArrayBuffer;
+	let arrayClass = SHARED ? SharedArrayBuffer : ArrayBuffer;
 	let buffer = new arrayClass(specificType.BYTES_PER_ELEMENT * unitCount);
 	let view = new specificType(buffer);
 	return view;
 }
 
-function assembleResults (results){
-	const keysToSum = ["encodedPixelErrors", "encodedPixelErrorsDetected", "decodedPixelErrors", "encodedPixelErrorsCorrectlyCorrected", "uncodedPixelErrors"];
+function assembleResults (results, raw, decoded){
+	if (!SHARED){
+		let offset = 0;
+		for (let j = 0; j < results.length; j++){
+			let rawSlice = results[j].rawSlice;
+			let decodedSlice = results[j].decodedSlice;
+			raw.set(rawSlice, offset);
+			decoded.set(decodedSlice, offset);
+			offset += rawSlice.length;
+		}
+	}
 	let output = {};
+	const keysToSum = ["encodedPixelErrors", "encodedPixelErrorsDetected", "decodedPixelErrors", "encodedPixelErrorsCorrectlyCorrected", "uncodedPixelErrors"];
 	for (let i = 0; i < keysToSum.length; i++){
 		let key = keysToSum[i];
 		output[key] = 0;
