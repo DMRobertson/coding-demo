@@ -1,6 +1,6 @@
 "use strict"
 
-const NUMBER_OF_WORKERS = 4;
+const NUMBER_OF_WORKERS = window.SharedArrayBuffer? 4 : 1;
 
 class WorkerPool {
 	/* No idea what I'm doing here.
@@ -57,7 +57,12 @@ class WorkerPool {
 		for (let i = 0; i < NUMBER_OF_WORKERS; i++){
 			let payload = payloadFactory(i);
 			payload.workerId = i;
-			this.workers[i].postMessage(payload);
+			if (window.SharedArrayBuffer){
+				this.workers[i].postMessage(payload);
+			} else {
+				// Transfer buffers to single worker
+				this.workers[i].postMessage(payload, [payload.raw.buffer, payload.encoded.buffer, payload.decoded.buffer]);
+			}
 		}
 	}
 	
@@ -213,15 +218,21 @@ function modelTransmission(){
 			encoded: encoded,
 			encodedStart: encodedBlockIndices[i],
 			encodedEnd: encodedBlockIndices[i+1],
-			settings: settings
+			settings: settings,
+			shared: !!window.SharedArrayBuffer
 		};
 	}
 	
 	function whenWorkersDone(results){
+		if (!window.SharedArrayBuffer){
+			raw = results[0].raw;
+			encoded = results[0].encoded;
+			decoded = results[0].decoded;
+		}
 		let output = assembleResults(results);
 		// raw transmitted verbatim through the channel and now has errors applied
 		let w = imageData.width;
-		let h = imageData.height;		
+		let h = imageData.height;
 		
 		const loopData = [
 			[ raw, "naive_transmission" ],
@@ -297,7 +308,8 @@ function getUintArray(encodedStorageSize, unitCount){
 		4: Uint32Array,
 	}
 	let specificType = arrayViewType[encodedStorageSize];
-	let buffer = new SharedArrayBuffer(specificType.BYTES_PER_ELEMENT * unitCount);
+	let arrayClass = window.SharedArrayBuffer ? window.SharedArrayBuffer : window.ArrayBuffer;
+	let buffer = new arrayClass(specificType.BYTES_PER_ELEMENT * unitCount);
 	let view = new specificType(buffer);
 	return view;
 }
